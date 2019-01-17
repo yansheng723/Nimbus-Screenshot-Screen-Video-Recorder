@@ -15,12 +15,13 @@
 
 var isLog = true;
 var MediaStream = window.MediaStream;
+var Storage = {};
+var isChrome = true;
 
 if (typeof MediaStream === 'undefined' && typeof webkitMediaStream !== 'undefined') {
     MediaStream = webkitMediaStream;
 }
 
-/*global MediaStream:true */
 if (typeof MediaStream !== 'undefined' && !('stop' in MediaStream.prototype)) {
     MediaStream.prototype.stop = function () {
         this.getAudioTracks().forEach(function (track) {
@@ -33,14 +34,36 @@ if (typeof MediaStream !== 'undefined' && !('stop' in MediaStream.prototype)) {
     };
 }
 
+if (typeof AudioContext !== 'undefined') {
+    Storage.AudioContext = AudioContext;
+} else if (typeof webkitAudioContext !== 'undefined') {
+    Storage.AudioContext = webkitAudioContext;
+}
+
+function isMediaRecorderCompatible() {
+    return true;
+}
+
+function bytesToSize(bytes) {
+    var k = 1000;
+    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    if (bytes === 0) {
+        return '0 Bytes';
+    }
+    var i = parseInt(Math.floor(Math.log(bytes) / Math.log(k)), 10);
+    return (bytes / Math.pow(k, i)).toPrecision(3) + ' ' + sizes[i];
+}
+
 iconService.setDefault();
 
 var videoRecorder = (function () {
+    // var port = null;
     var streamVideo = null;
     var streamAudio = null;
-    // var $streamElement,
-    var $tabCursor;
-    var typeCapture, tabSound, micSound, videoSize, audioBitrate, videoBitrate, videoFps, audioPlayer, context;
+    // var streamCamera = null;
+    // var $tabCursor;
+    var typeCapture, tabSound, micSound, videoCamera, deawingTools, videoSize, audioBitrate, videoBitrate, videoFps,
+        audioPlayer, context;
     var countdown = 0;
     var timer = null;
     var activeTab = null;
@@ -49,13 +72,14 @@ var videoRecorder = (function () {
     var isError = false;
     var timeStart = null;
     var timePause = null;
+    // var microphoneDevice = false;
+    // var cameraDevice = false;
 
-    function onMediaAccess(access) {
-        if (access) {
-            streamVideo.active && preRecord(streamVideo)
-        } else {
-            stopStream();
-        }
+    function mediaAccess(data) {
+        capture({
+            type: data.typeCapture,
+            media_access: true
+        });
     }
 
     function failure_handler(error) {
@@ -64,40 +88,46 @@ var videoRecorder = (function () {
 
     function startRecord(videoStream, audioStream) {
         if (isLog) console.log('startRecord', arguments);
-        injectionCursor();
-        injectionVideoPanel();
 
-        var recorder_option = {
-            autoWriteToDisk: true,
+        if (typeCapture !== 'camera') {
+            injectionCursor();
+            injectionVideoPanel();
+            injectionWatermarkVideo();
+        }
+
+        if (typeCapture === 'tab' || typeCapture === 'camera') {
+            injectionWebCamera();
+        }
+
+        let recorder_option = {
+            // autoWriteToDisk: true,
             type: 'video',
+            //timeSlice: 1000,
             disableLogs: false,
             mimeType: 'video/webm\;codecs=vp8',
             audioBitsPerSecond: audioBitrate,
             videoBitsPerSecond: videoBitrate
         };
 
-        if (audioStream && audioStream.getAudioTracks && audioStream.getAudioTracks().length) {
-            audioPlayer = new Audio();//document.createElement('audio');
-            audioPlayer.muted = true;
-            audioPlayer.volume = 0;
-            audioPlayer.src = URL.createObjectURL(audioStream);
-            audioPlayer.play();
+        if (audioStream) {
+            let finalStream = new MediaStream();
+            let mixedAudioStream = getMixedAudioStream([audioStream, videoStream]);
 
-            var singleAudioStream = getMixedAudioStream([audioStream]);
-            if (typeof singleAudioStream == 'boolean') {
-                isError = true;
-                stopStream();
-                alert('Something went Wrong. Important! Restart your Browser or Reload Nimbus Capture extension.');
-                return;
-            }
-            singleAudioStream.addTrack(videoStream.getVideoTracks()[0]);
-            videoStream = singleAudioStream;
+            mixedAudioStream.getAudioTracks().forEach(function (audioTrack) {
+                finalStream.addTrack(audioTrack);
+            });
+
+            videoStream.getVideoTracks().forEach(function (videoTrack) {
+                finalStream.addTrack(videoTrack);
+            });
+
+            videoStream = finalStream;
         }
 
         recorder = RecordRTC(videoStream, recorder_option);
         recorder.startRecording();
 
-        chrome.tabs.query({active: true}, function (tabs) {
+        chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
             chrome.tabs.sendMessage(tabs[0].id, {operation: 'status_video', status: getStatus(), state: getState()});
         });
 
@@ -133,20 +163,25 @@ var videoRecorder = (function () {
             };
 
             if (micSound) {
-                window.navigator.getUserMedia({audio: true}, function (stream_audio) {
+                const constraints = {audio: {deviceId: localStorage.selectedMicrophone ? {exact: localStorage.selectedMicrophone} : undefined}};
+                window.navigator.getUserMedia(constraints, function (stream_audio) {
                     streamAudio = stream_audio;
                     startRecord(streamVideo, streamAudio);
-                }, function (e) {
+                }, function (err) {
                     isRecording = false;
-                    chrome.tabs.create({url: 'mic.html'});
+                    console.error('not access mic', err)
                 })
             } else {
                 startRecord(streamVideo);
             }
 
             if (tabSound) {
-                var audio = new Audio();
-                audio.src = URL.createObjectURL(stream);
+                let audio = new Audio();
+                try {
+                    audio.srcObject = stream;
+                } catch (error) {
+                    audio.src = window.URL.createObjectURL(stream);
+                }
                 audio.volume = 1;
                 audio.play();
             }
@@ -171,44 +206,56 @@ var videoRecorder = (function () {
         })()
     }
 
+    // function hideCameraEmbed() {
+    //     // if (port) {
+    //     //     port.postMessage({action: "stop"});
+    //     // }
+    // }
+
     function captureTab() {
         if (isLog) console.log('captureTab', arguments);
-        chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
-            if (!tabs.length || /^chrome/.test(tabs[0].url)) {
-                isRecording = false;
-                alert(chrome.i18n.getMessage('notificationErrorChromeTab'));
-            } else {
-                activeTab = tabs[0];
-                var constraints = {
-                    audio: !micSound && tabSound,
-                    video: true,
-                    videoConstraints: {
-                        mandatory: {
-                            chromeMediaSource: 'tab',
-                            maxFrameRate: videoFps,
-                            maxWidth: typeof videoSize !== 'object' ? activeTab.width : videoSize.width,
-                            maxHeight: typeof videoSize !== 'object' ? activeTab.height : videoSize.height
-                        }
-                    }
-                };
-                localStorage.currentVideoWidth = constraints.videoConstraints.mandatory.maxWidth;
-                localStorage.currentVideoHeight = constraints.videoConstraints.mandatory.maxHeight;
 
-                chrome.tabCapture.capture(constraints, preRecord);
+        chrome.tabCapture.capture({
+            audio: tabSound,
+            video: true,
+            videoConstraints: {
+                mandatory: {
+                    chromeMediaSource: 'tab',
+                    maxFrameRate: videoFps,
+                    maxWidth: typeof videoSize !== 'object' ? activeTab.width : videoSize.width,
+                    maxHeight: typeof videoSize !== 'object' ? activeTab.height : videoSize.height
+                }
             }
-        });
+        }, preRecord);
+    }
+
+    function captureCamera() {
+        if (isLog) console.log('captureCamera', arguments);
+        window.navigator.getUserMedia({
+            video: {
+                width: 1280,
+                height: 720,
+                deviceId: localStorage.selectedVideoCamera ? {exact: localStorage.selectedVideoCamera} : undefined
+            }
+        }, preRecord, failure_handler);
     }
 
     function captureDesktop() {
         if (isLog) console.log('captureDesktop', arguments);
-        chrome.desktopCapture.chooseDesktopMedia(['screen', 'window'], function (streamId) {
+        chrome.desktopCapture.chooseDesktopMedia(["screen", "window"/*, "audio"*/], function (streamId) {
             if (!streamId) {
                 isRecording = false;
             } else {
-                var constraints = {
+                const constraints = {
+                    // audio: {
+                    //     mandatory: {
+                    //         chromeMediaSource: 'desktop',
+                    //         chromeMediaSourceId: streamId
+                    //     }
+                    // },
                     video: {
                         mandatory: {
-                            chromeMediaSource: "desktop",
+                            chromeMediaSource: 'desktop',
                             chromeMediaSourceId: streamId,
                             maxFrameRate: videoFps,
                             maxWidth: typeof videoSize !== 'object' ? window.screen.width : videoSize.width,
@@ -216,15 +263,11 @@ var videoRecorder = (function () {
                         }
                     }
                 };
-                localStorage.currentVideoWidth = constraints.video.mandatory.maxWidth;
-                localStorage.currentVideoHeight = constraints.video.mandatory.maxHeight;
                 countdownRun(function () {
                     window.navigator.getUserMedia(constraints, preRecord, failure_handler);
                 })
             }
-
         });
-
     }
 
     function capture(param) {
@@ -232,9 +275,12 @@ var videoRecorder = (function () {
         if (isRecording) return;
         isRecording = true;
 
-        countdown = param.countdown;
+        localStorage.typeVideoCapture = typeCapture = param.type || 'tab';
+        countdown = +localStorage.videoCountdown;
+        videoCamera = localStorage.videoCamera === 'true';
         micSound = localStorage.micSound === 'true';
         tabSound = localStorage.tabSound === 'true';
+        deawingTools = localStorage.deawingTools === 'true';
         videoSize = localStorage.videoSize === 'auto';
         audioBitrate = +localStorage.audioBitrate;
         videoBitrate = +localStorage.videoBitrate;
@@ -260,61 +306,109 @@ var videoRecorder = (function () {
                 break;
         }
 
-        if (param.type === 'tab') {
-            if (param.countdown > 0 && !param.not_timer) {
-                isRecording = false;
-                chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
-                    if (!tabs.length || /^chrome/.test(tabs[0].url)) {
-                        alert(chrome.i18n.getMessage('notificationErrorChromeTab'));
+        if (typeCapture === 'desktop' && typeCapture === 'camera') {
+            tabSound = false;
+            deawingTools = false;
+            videoCamera = false;
+        }
+
+        if (isLog) console.log('typeCapture', typeCapture, 'tabSound', tabSound, 'micSound', micSound, 'videoCamera', videoCamera, 'deawingTools', deawingTools);
+
+        if (typeCapture === 'tab' || typeCapture === 'camera') {
+            chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
+                if (!activeTab && (!tabs.length || /^chrome/.test(tabs[0].url))) {
+                    isRecording = false;
+                    alert(chrome.i18n.getMessage('notificationErrorChromeTab'));
+                } else {
+                    if (!activeTab) activeTab = tabs[0];
+                    if ((micSound || videoCamera || typeCapture === 'camera') && !param.media_access) {
+                        isRecording = false;
+                        let constraints = {};
+                        if (micSound) constraints.audio = {deviceId: localStorage.selectedMicrophone ? {exact: localStorage.selectedMicrophone} : undefined};
+                        if (videoCamera || typeCapture === 'camera') constraints.video = {deviceId: localStorage.selectedVideoCamera ? {exact: localStorage.selectedVideoCamera} : undefined};
+
+                        if (isLog) console.log('getUserMedia constraints', constraints);
+
+                        window.navigator.getUserMedia(constraints, function () {
+                            capture({type: typeCapture, media_access: true});
+                        }, function () {
+                            if (micSound && (videoCamera || typeCapture === 'camera')) {
+                                chrome.tabs.create({url: 'media_access/camera_and_mic.html?' + typeCapture});
+                            } else if (videoCamera || typeCapture === 'camera') {
+                                chrome.tabs.create({url: 'media_access/camera.html?' + typeCapture});
+                            } else {
+                                chrome.tabs.create({url: 'media_access/mic.html?' + typeCapture});
+                            }
+                        });
+                    } else if (countdown > 0 && !param.not_timer) {
+                        isRecording = false;
+                        chrome.tabs.update(activeTab.id, {active: true}, function () {
+                            timerContent.set(countdown, typeCapture)
+                        });
                     } else {
-                        timerContent.set(param.countdown, 'tab');
+                        if (typeCapture === 'tab') {
+                            chrome.tabs.update(activeTab.id, {active: true}, captureTab)
+                        } else {
+                            chrome.tabs.update(activeTab.id, {active: true}, captureCamera)
+                        }
                     }
+                }
+            });
+        } else {
+            if (micSound && !param.media_access) {
+                isRecording = false;
+                let constraints = {};
+                if (micSound) constraints.audio = {deviceId: localStorage.selectedMicrophone ? {exact: localStorage.selectedMicrophone} : undefined};
+                if (isLog) console.log('getUserMedia constraints', constraints);
+                window.navigator.getUserMedia(constraints, function () {
+                    capture({type: typeCapture, media_access: true});
+                }, function () {
+                    chrome.tabs.create({url: 'media_access/mic.html?' + typeCapture});
                 });
             } else {
-                typeCapture = 'tab';
-                captureTab()
+                captureDesktop();
             }
-        } else {
-            typeCapture = 'desktop';
-            captureDesktop();
         }
     }
 
     function stopStream() {
         if (isLog) console.log('stopStream', streamVideo, streamAudio, recorder);
-        if (streamVideo.active && recorder.state !== 'recording') {
-            timePause = null;
-            recorder.resumeRecording();
-            iconService.setRec();
-        }
+        // if (streamVideo && streamVideo.active && recorder.state !== 'recording') {
+        //     timePause = null;
+        //     recorder.resume();
+        //     iconService.setRec();
+        // }
+        // window.setTimeout(function () {
+        //     try {
+        //         streamVideo.stop();
+        //         streamAudio.stop();
+        //         stopRecord();
+        //     } catch (e) {
+        //         stopRecord();
+        //     }
+        // }, 1500);
+
         window.setTimeout(function () {
-            try {
-                streamVideo.stop();
-                streamAudio.stop();
-                stopRecord();
-            } catch (e) {
-                stopRecord();
+            if (recorder.state !== 'recording') {
+                timePause = null;
+                recorder.resumeRecording();
+                iconService.setRec();
             }
-        }, 1500);
+            stopRecord();
+        }, 1000);
     }
+
+    // function errorHandler(e) {
+    //     console.error(e);
+    // }
 
     function stopRecord() {
         if (isLog) console.log('stopRecord', arguments);
-        if (timer) {
-            clearInterval(timer);
-            countdown = 0;
-            timer = null;
-        }
 
-        recorder.stopRecording(function (audioVideoWebMURL) {
-            timeStart = null;
-            iconService.setDefault();
-            $tabCursor && chrome.tabs.sendMessage($tabCursor.id, {cursor: false});
-            $tabCursor = null;
-            activeTab = null;
-            isRecording = false;
-
+        recorder.stopRecording(function (url) {
             try {
+                streamVideo.stop();
+                streamAudio.stop();
                 audioPlayer && (audioPlayer = undefined);
                 context && (context.close());
                 context = undefined;
@@ -322,21 +416,131 @@ var videoRecorder = (function () {
                 console.log(e)
             }
 
-            chrome.tabs.query({active: true}, function (tabs) {
-                chrome.tabs.sendMessage(tabs[0].id, {operation: 'status_video', status: getStatus(), state: getState()});
-            });
-            screenshot.changeVideoButton();
-            if (!isError) {
-                localStorage.audioVideoWebMURL = audioVideoWebMURL;
-                screenshot.createEditPage('video');
+            if (timer) {
+                clearInterval(timer);
+                countdown = 0;
+                timer = null;
             }
+
+            timeStart = null;
+            activeTab = null;
+            isRecording = false;
+            iconService.setDefault();
+            screenshot.changeVideoButton();
+
+            chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
+                chrome.tabs.sendMessage(tabs[0].id, {
+                    operation: 'status_video',
+                    status: getStatus(),
+                    state: getState()
+                });
+            });
+
+            let blob = recorder.getBlob();
+
+            if (!isError) {
+                window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+                window.requestFileSystem(window.PERSISTENT, 10 * 1024 * 1024 * 1024, function (fs) {
+                        let truncated = false;
+                        // fs.root.getDirectory('video', {create: true}, function (dirEntry) {
+                        fs.root.getFile('video.webm', {create: true}, function (fileEntry) {
+                            fileEntry.createWriter(function (writer) {
+                                writer.onwriteend = function (progress) {
+                                    if (!truncated) {
+                                        truncated = true;
+                                        this.truncate(this.position);
+                                        return;
+                                    }
+                                    console.log("Write completed", progress);
+                                    screenshot.createEditPage('video');
+                                };
+
+                                writer.onerror = function (err) {
+                                    console.error("Write failed", err);
+                                };
+                                writer.write(blob);
+                            }, function (err) {
+                                console.error("Create Writer failed", err);
+                            });
+                        }, function (err) {
+                            console.error("Get File failed", err);
+                        });
+                    },
+                    //function (err) {
+                    //     console.error("Get Directory failed", err);
+                    // }
+                    // );
+                    // ,
+                    function (err) {
+                        console.error("File System failed", err);
+                    }
+                );
+            }
+
             console.log('isError', isError);
             isError = false;
         });
+
+
+// recorder.stop(function () {
+//     if (timer) {
+//         clearInterval(timer);
+//         countdown = 0;
+//         timer = null;
+//     }
+//
+//     recorder.state = 'stop';
+//     timeStart = null;
+//     iconService.setDefault();
+//     activeTab = null;
+//     isRecording = false;
+//
+//     try {
+//         audioPlayer && (audioPlayer = undefined);
+//         context && (context.close());
+//         context = undefined;
+//     } catch (e) {
+//         console.log(e)
+//     }
+//     screenshot.changeVideoButton();
+//
+//     chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
+//         chrome.tabs.sendMessage(tabs[0].id, {
+//             operation: 'status_video',
+//             status: getStatus(),
+//             state: getState()
+//         });
+//     });
+//
+//     if (!isError) {
+//         window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+//         window.requestFileSystem(window.PERSISTENT, 10 * 1024 * 1024 * 1024, function (fs) {
+//             let truncated = false;
+//             fs.root.getFile('video.webm', {create: true}, function (fileEntry) {
+//                 fileEntry.createWriter(function (writer) {
+//                     writer.onwriteend = function (e) {
+//                         if (!truncated) {
+//                             truncated = true;
+//                             this.truncate(this.position);
+//                         }
+//                     };
+//
+//                     writer.onerror = errorHandler;
+//                     writer.write(recorder.blob);
+//                 }, errorHandler);
+//             }, errorHandler);
+//         }, errorHandler);
+//
+//         screenshot.createEditPage('video');
+//     }
+//     console.log('isError', isError);
+//     isError = false;
+// });
     }
 
     function pauseRecord() {
         if (isLog) console.log('pauseRecord', arguments);
+
         if (recorder.state === 'recording') {
             timePause = Date.now();
             recorder.pauseRecording();
@@ -346,7 +550,19 @@ var videoRecorder = (function () {
             recorder.resumeRecording();
             iconService.setRec();
         }
-        chrome.tabs.query({active: true}, function (tabs) {
+
+        // if (recorder.state === 'recording') {
+        //     timePause = Date.now();
+        //     recorder.pause();
+        //     iconService.setPause();
+        //     recorder.state = 'pause';
+        // } else {
+        //     timePause = null;
+        //     recorder.resume();
+        //     iconService.setRec();
+        //     recorder.state = 'recording';
+        // }
+        chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
             chrome.tabs.sendMessage(tabs[0].id, {operation: 'status_video', status: getStatus(), state: getState()});
         });
     }
@@ -355,28 +571,28 @@ var videoRecorder = (function () {
         return (recorder && recorder.state);
     }
 
-    function getMixedAudioStream(arrayOfMediaStreams) {
-        try {
-            context = new AudioContext();
-        } catch (e) {
-            console.log(e);
-            return false;
-        }
+    function getStatus() {
+        return timer || (streamVideo && !!streamVideo.active);
+    }
 
-        var audioSources = [];
+    function getMixedAudioStream(arrayOfAudioStreams) {
+        let audioContext = new AudioContext();
 
-        var gainNode = context.createGain();
-        gainNode.connect(context.destination);
+        let audioSources = [];
+
+        let gainNode = audioContext.createGain();
+        gainNode.connect(audioContext.destination);
         gainNode.gain.value = 0;
 
-        var audioTracksLength = 0;
-        arrayOfMediaStreams.forEach(function (stream) {
+        let audioTracksLength = 0;
+        arrayOfAudioStreams.forEach(function (stream) {
             if (!stream.getAudioTracks().length) {
                 return;
             }
+
             audioTracksLength++;
 
-            var audioSource = context.createMediaStreamSource(stream);
+            let audioSource = audioContext.createMediaStreamSource(stream);
             audioSource.connect(gainNode);
             audioSources.push(audioSource);
         });
@@ -385,45 +601,41 @@ var videoRecorder = (function () {
             return;
         }
 
-        var mediaStreamDestination = context.createMediaStreamDestination();
+        let audioDestination = audioContext.createMediaStreamDestination();
         audioSources.forEach(function (audioSource) {
-            audioSource.connect(mediaStreamDestination);
+            audioSource.connect(audioDestination);
         });
-        return mediaStreamDestination.stream;
-    }
-
-    function getStatus() {
-        return timer || !!streamVideo.active;
+        return audioDestination.stream;
     }
 
     function getTimeRecord() {
-        var date = Date.now();
+        const date = Date.now();
         timeStart = timeStart + (timePause ? date - timePause : 0);
         timePause = timePause ? date : null;
         return timeStart ? (date - timeStart) : 0;
     }
 
     function injectionCursor() {
-        // if (localStorage.cursorAnimate !== 'true')
-        return;
-        chrome.tabs.insertCSS(activeTab.id, {file: "css/new-style.css"});
-        chrome.tabs.executeScript(activeTab.id, {file: "js/content-cursor.js"}, function () {
-            chrome.tabs.sendMessage(activeTab.id, {cursor: true, cursorAnimate: localStorage.cursorAnimate === 'true'}, function () {
-                activeTab.injectionCursor = true;
-            });
-        });
+        // if (localStorage.cursorAnimate !== 'true') return;
+        // if (!activeTab) return;
+        // chrome.tabs.insertCSS(activeTab.id, {file: "css/new-style.css"});
+        // chrome.tabs.executeScript(activeTab.id, {file: "js/content-cursor.js"}, function () {
+        //     chrome.tabs.sendMessage(activeTab.id, {cursor: true, cursorAnimate: localStorage.cursorAnimate === 'true'}, function () {
+        //         activeTab.injectionCursor = true;
+        //     });
+        // });
     }
 
     function injectionVideoPanel() {
         if (!activeTab) return;
-        chrome.tabs.sendMessage(activeTab.id, {operation: 'is_set_file'}, function (status) {
+        chrome.tabs.sendMessage(activeTab.id, {operation: 'nsc_video_panel_is'}, function (status) {
             if (!status) {
                 chrome.tabs.insertCSS(activeTab.id, {file: "css/flex.css"});
                 chrome.tabs.insertCSS(activeTab.id, {file: "css/icons.css"});
-                chrome.tabs.insertCSS(activeTab.id, {file: "css/new-style.css"});
+                chrome.tabs.insertCSS(activeTab.id, {file: "css/video-panel.css"});
                 chrome.tabs.executeScript(activeTab.id, {file: "js/jquery.js"}, function () {
                     chrome.tabs.executeScript(activeTab.id, {file: "js/video-editor.js"}, function () {
-                        chrome.tabs.executeScript(activeTab.id, {code: "var deawingTools = " + (localStorage.deawingTools == 'true') + ", deleteDrawing = " + +localStorage.deleteDrawing + ";"}, function () {
+                        chrome.tabs.executeScript(activeTab.id, {code: "var deawingTools = " + deawingTools + ", deleteDrawing = " + +localStorage.deleteDrawing + ", videoEditorTools='" + localStorage.videoEditorTools + "';"}, function () {
                             chrome.tabs.executeScript(activeTab.id, {file: "js/video-panel.js"});
                         });
                     });
@@ -432,18 +644,65 @@ var videoRecorder = (function () {
         });
     }
 
+    function injectionWebCamera() {
+        if (!activeTab) return;
+
+        chrome.tabs.sendMessage(activeTab.id, {operation: 'nsc_web_camera_is'}, function (status) {
+            if (!status) {
+                chrome.tabs.insertCSS(activeTab.id, {file: "css/flex.css"});
+                chrome.tabs.insertCSS(activeTab.id, {file: "css/icons.css"});
+                chrome.tabs.insertCSS(activeTab.id, {file: "css/video-panel.css"});
+                chrome.tabs.executeScript(activeTab.id, {file: "js/jquery.js"}, function () {
+                    chrome.tabs.executeScript(activeTab.id, {code: "var videoCameraPosition = " + localStorage.videoCameraPosition + ", selectedVideoCamera = " + localStorage.selectedVideoCamera + ", typeCapture='" + typeCapture + "', videoCamera=" + videoCamera + ";"}, function () {
+                        chrome.tabs.executeScript(activeTab.id, {file: "js/content-camera.js"});
+                    });
+                });
+            }
+        });
+    }
+
+    function injectionWatermarkVideo() {
+        console.log('injectionWatermarkVideo', activeTab)
+        if (!activeTab) return;
+
+        let checkAndSend = function () {
+            core.checkWaterMark(function (check) {
+                console.log('checkWaterMark', check);
+                if (check) {
+                    core.getWaterMark();
+
+                    window.setTimeout(function () {
+                        core.getWaterMark(function (watermark) {
+                            console.log('getWaterMark', watermark);
+                            core.sendMessage({
+                                operation: 'set_watermark_video',
+                                dataUrl: watermark.toDataURL(),
+                                position: localStorage.positionWatermark
+                            })
+                        })
+                    }, 0);
+                }
+            })
+        };
+        chrome.tabs.executeScript(activeTab.id, {file: "js/jquery.js"}, function () {
+            chrome.tabs.executeScript(activeTab.id, {file: "js/content-watermark.js"}, checkAndSend);
+        });
+    }
+
     chrome.tabs.onUpdated.addListener(function (tabId, info) {
-        chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
-            if (info.status == "loading" && tabs[0].id && tabs[0].url && activeTab &&
-                tabs[0].id == tabId && activeTab.id == tabId && !/^chrome/.test(tabs[0].url)) {
+        chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
+            if (info.status === "loading" && tabs[0].id && tabs[0].url && activeTab &&
+                tabs[0].id === tabId && activeTab.id === tabId && !/^chrome/.test(tabs[0].url)) {
                 injectionCursor();
                 injectionVideoPanel();
+                injectionWebCamera();
+                injectionWatermarkVideo();
             }
         });
     });
 
     chrome.tabs.onRemoved.addListener(function (tabId, info) {
-        if (activeTab && activeTab.id == tabId) {
+        if (activeTab && activeTab.id === tabId) {
             stopStream();
         }
     });
@@ -457,6 +716,7 @@ var videoRecorder = (function () {
         getStatus: getStatus,
         getState: getState,
         getTimeRecord: getTimeRecord,
-        onMediaAccess: onMediaAccess
+        mediaAccess: mediaAccess
     }
-})();
+})
+();

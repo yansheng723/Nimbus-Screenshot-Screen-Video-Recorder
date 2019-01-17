@@ -21,7 +21,7 @@ var i18nTemplate = function () {
 
     [].forEach.call(nodes, function (e) {
         var text = getValue(e.getAttribute(attr));
-        if (text) e.innerText  = text;
+        if (text) e.innerHTML  = text;
     });
 };
 i18nTemplate();

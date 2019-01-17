@@ -11,8 +11,8 @@
 .nsc-icon-plus-color {background:url(chrome-extension://__MSG_@@extension_id__/images/new/plus-color.png) no-repeat;}
 .nsc-icon-slack-logo {background:url(chrome-extension://__MSG_@@extension_id__/images/new/slack-logo.png) no-repeat;}
 .nsc-icon-chain {background:url(chrome-extension://__MSG_@@extension_id__/images/copy17.png) no-repeat;}
-.nsc-icon-options {background:url(chrome-extension://__MSG_@@extension_id__/images/new/options.png) no-repeat;} 
-.nsc-icon-onoff {background:url(chrome-extension://__MSG_@@extension_id__/images/new/onoff.png) no-repeat;} 
+.nsc-icon-options {background:url(chrome-extension://__MSG_@@extension_id__/images/new/options.png) no-repeat;}
+.nsc-icon-onoff {background:url(chrome-extension://__MSG_@@extension_id__/images/new/onoff.png) no-repeat;}
 .nsc-icon-nsc-logo-dark {background:url(chrome-extension://__MSG_@@extension_id__/images/new/nsc-logo-dark.png) no-repeat;}
 
 .nsc-icon-visible {background:url(chrome-extension://__MSG_@@extension_id__/images/new/old-icons.png) no-repeat 0px 2px !important;}
@@ -31,13 +31,21 @@
 
 .nsc-icon-save-video {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-save-video.svg) no-repeat;}
 .nsc-icon-youtube {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-youtube.svg) no-repeat;}
+.nsc-icon-dropbox-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-dropbox.svg) no-repeat; width:24px; height:24px;}
 .nsc-icon-plus {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-plus.svg) no-repeat;}
 .nsc-icon-panel-cancel {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-panel-cancel.svg) no-repeat;}
 .nsc-icon-options-white-16 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-options-white-16.svg) no-repeat center; width:16px !important; height:16px !important;}
 .nsc-icon-gif-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-gif-24.svg) no-repeat; width:24px; height:24px;}
 .nsc-icon-mp4-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-mp4-24.svg) no-repeat; width:24px; height:24px;}
 .nsc-icon-webm {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-webm.svg) no-repeat; width:32px; height:24px;}
+.nsc-icon-gif-dark-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-gif-dark-24.svg) no-repeat; width:24px; height:24px;}
+.nsc-icon-mp4-dark-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-mp4-dark-24.svg) no-repeat; width:24px; height:24px;}
+.nsc-icon-youtube-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-youtube-24.svg) no-repeat; width:24px; height:24px;}
+.nsc-icon-google-drive-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-googe-drive-24.svg) no-repeat; width:24px; height:24px;}
+.nsc-icon-watermark-dark-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-watermark-dark-24.svg) no-repeat; width:24px; height:24px;}
+.nsc-icon-support-dark-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-support-dark-24.svg) no-repeat; width:24px; height:24px;}
 
+.nsc-icon-cursor-none {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-cursor-none.svg) no-repeat center;}
 .nsc-icon-cursor-normal {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-cursor-normal.svg) no-repeat center;}
 .nsc-icon-cursor-long {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-cursor-long.svg) no-repeat center;}
 .nsc-icon-cursor-circle {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-cursor-circle.svg) no-repeat center;}
@@ -63,9 +71,12 @@
 .nsc-icon-pause {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-pause.svg) no-repeat center;}
 .nsc-icon-play {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-play.svg) no-repeat center;}
 .nsc-icon-stop {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-stop.svg) no-repeat center;}
+.nsc-icon-webcam {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-webcam.svg) no-repeat center;}
 
 .nsc-icon-panel-expand {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-expand.svg) no-repeat center;}
+.nsc-icon-panel-collapse {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-collapse.svg) no-repeat center;}
 .nsc-icon-panel-close {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-close.svg) no-repeat center;}
+
 .nsc-icon-settings {background:url(chrome-extension://__MSG_@@extension_id__/images/new/settings.png) no-repeat center;}
 .nsc-icon-download {background:url(chrome-extension://__MSG_@@extension_id__/images/download.png) no-repeat center;}
 .nsc-icon-cloud-nimbus {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-cloud-nimbus.svg) no-repeat center;}
@@ -150,6 +161,7 @@
 .nsc-icon-android-version-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-android-version-24.svg) no-repeat center; width:24px; height:24px;}
 .nsc-icon-nimbus-clipper-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-clipper-24.svg) no-repeat center; width:24px; height:24px;}
 .nsc-icon-edit-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/new/ic-selection-edit-24.svg) no-repeat center; width:24px; height:24px;}
+.nsc-icon-webcam-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-webcam-24.svg) no-repeat center; width:24px; height:24px;}
 
 .nsc-icon-ic-devices-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-devices-24.svg) no-repeat center; width:24px; height:24px;}
 .nsc-icon-ic-image_text-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-image_text-24.svg) no-repeat center; width:24px; height:24px;}
@@ -169,6 +181,7 @@
 .ic-delayed-screenshot-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/new/ic-delayed-screenshot-24.svg) no-repeat center; width:24px; height:24px;}
 .ic-mouse-click {background:url(chrome-extension://__MSG_@@extension_id__/images/new/ic-mouse-click.svg) no-repeat -4px 0; background-size: 120%; width:24px; height:24px;}
 .ic-editor {background:url(chrome-extension://__MSG_@@extension_id__/images/new/ic-editor.svg) no-repeat center; width:24px; height:24px;}
+.ic-watermark {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-watermark.svg) no-repeat center; width:24px; height:24px;}
 
 .ic-cancel {background:url(chrome-extension://__MSG_@@extension_id__/images/new/ic-cancel.svg) no-repeat center; width:16px !important; height:16px !important;}
 .nsc-icon-close-2 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-close-2.svg) no-repeat center; width:16px !important; height:16px !important;}
@@ -187,11 +200,24 @@
 
 .ic-gallery-16 {background:url(chrome-extension://__MSG_@@extension_id__/images/gallery/ic-gallery-16.svg) no-repeat center;}
 
+.ic-notif-check {background:url(chrome-extension://__MSG_@@extension_id__/images/new/ic-notif-check.svg) no-repeat center; width: 46px !important; height: 46px !important;}
+.ic-notif-check {background:url(chrome-extension://__MSG_@@extension_id__/images/new/ic-notif-check.svg) no-repeat center; width: 46px !important; height: 46px !important;}
+.ic-notif-alert {background:url(chrome-extension://__MSG_@@extension_id__/images/new/ic-notif-alert.svg) no-repeat center; width: 46px !important; height: 46px !important;}
+.ic-notif-question {background:url(chrome-extension://__MSG_@@extension_id__/images/new/ic-notif-question.svg) no-repeat center; width: 46px !important; height: 46px !important;}
+
+.nsc-icon-star {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-star-24.svg) no-repeat center;}
+.nsc-icon-star-solid {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-star-solid-24.svg) no-repeat center;}
+
+.nsc-icon-play-white-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-play-white-24.svg) no-repeat center; width:24px; height:24px;}
+.nsc-icon-pause-white-24 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-pause-white-24.svg) no-repeat center; width:24px; height:24px;}
+.nsc-icon-scissors-white-16 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-scissors-white-16.svg) no-repeat center;}
+.nsc-icon-text-add-16 {background:url(chrome-extension://__MSG_@@extension_id__/images/symbols/ic-text-add-16.svg) no-repeat center;}
+
 /*colorpicker*/
 .ic-color-custom {background:url(chrome-extension://__MSG_@@extension_id__/images/colorpicker/ic-color-custom.svg) no-repeat center;}
 .ic-color-add {background:url(chrome-extension://__MSG_@@extension_id__/images/colorpicker/ic-color-add.svg) no-repeat center;}
-.ic-color-remove {background:url(chrome-extension://__MSG_@@extension_id__/images/colorpicker/ic-color-remove.svg) no-repeat center;} 
-.ic-arrow-up-small {background:url(chrome-extension://__MSG_@@extension_id__/images/colorpicker/ic-arrow-up-small.svg) no-repeat center;} 
+.ic-color-remove {background:url(chrome-extension://__MSG_@@extension_id__/images/colorpicker/ic-color-remove.svg) no-repeat center;}
+.ic-arrow-up-small {background:url(chrome-extension://__MSG_@@extension_id__/images/colorpicker/ic-arrow-up-small.svg) no-repeat center;}
 .ic-color-select {background:url(chrome-extension://__MSG_@@extension_id__/images/colorpicker/ic-color-select.svg) no-repeat center;}
 
 .nsc-icon-loading{background:url(chrome-extension://__MSG_@@extension_id__/images/new/loading.svg) no-repeat center;}

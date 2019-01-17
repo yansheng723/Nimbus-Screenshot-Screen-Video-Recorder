@@ -9,7 +9,7 @@
       "message": "Nimbus Screenshot"
    },
    "btnAccessMic": {
-      "message": "Дать доступ к микрофону"
+      "message": "Дать доступ к микрофону и камере"
    },
    "btnAndroidVersion": {
       "message": "Версия для Android"
@@ -56,6 +56,9 @@
    "btnOptions": {
       "message": "Настройки"
    },
+   "btnOptionsWatermark": {
+      "message": "Настройки вотермарков"
+   },
    "btnReadyVideo": {
       "message": "Я готов записывать видео"
    },
@@ -98,6 +101,9 @@
    "editBtnDrive": {
       "message": "В Google Drive"
    },
+   "editBtnDropbox": {
+      "message": "В Dropbox"
+   },
    "editBtnNimbus": {
       "message": "В Nimbus Note"
    },
@@ -105,7 +111,10 @@
       "message": "Распечатать"
    },
    "editBtnSave": {
-      "message": "На диск"
+      "message": "Сохранить на диск"
+   },
+   "editBtnSavePDF": {
+      "message": "Сохранить в PDF"
    },
    "editBtnSaveVideo": {
       "message": "Сохранить видео"
@@ -140,6 +149,9 @@
    "gDriveUploadPrivate": {
       "message": "Сохранить приватно"
    },
+   "hotKeys": {
+      "message": "Хоткей"
+   },
    "labelCaptureHelper": {
       "message": "Выберите один из экранов для снимка!"
    },
@@ -150,7 +162,10 @@
       "message": "Немного терпения..."
    },
    "labelPreviewLoadingVideo": {
-      "message": "Обработка видео ... это может занять 10-60 секунд, иногда дольше в зависимости от вашего компьютера ... подождите ..."
+      "message": "Обработка видео - подождите ..."
+   },
+   "labelRedactorLoading": {
+      "message": "Немного терпения..."
    },
    "newReleaseText": {
       "message": "\u003Cli>Обновлённый дизайн;\u003C/li>\u003Cli>Замочек, который запрещает редактирование элементов;\u003C/li>\u003Cli>Возможность делать отложенный скриншот;\u003C/li>\u003Cli>Возможность менять главное меню и убирать лишние режимы;\u003C/li>\u003Cli>Возможность указывать произвольно цифры у нужных фигур;\u003C/li>\u003Cli> Возможность быстро отправлять скриншоты в Nimbus/Slack из редактора через хоткей ctrl+enter;\u003C/li>\u003Cli>Исправлены некоторые ошибки;\u003C/li>"
@@ -166,6 +181,9 @@
    },
    "nimbusBad": {
       "message": "Плохо"
+   },
+   "nimbusBannedDeviceDestruction": {
+      "message": "Данное устройство было забанено Вами."
    },
    "nimbusBeBetter": {
       "message": "Средненько"
@@ -184,6 +202,9 @@
    },
    "nimbusBtnSignup": {
       "message": "Создать аккаунт"
+   },
+   "nimbusCaptureUpgradePro": {
+      "message": "Ещё больше возможностей\u003Cbr>с Nimbus Capture Pro"
    },
    "nimbusChannels": {
       "message": "Каналы"
@@ -207,13 +228,16 @@
       "message": "Добавить информацию о системе и странице"
    },
    "nimbusGoPro": {
-      "message": "Перейти к Nimbus Pro"
+      "message": "Обновится до Nimbus Pro"
    },
    "nimbusGood": {
       "message": "Хорошо!"
    },
    "nimbusHelp": {
       "message": "Помощь"
+   },
+   "nimbusIncreaseLimit": {
+      "message": "Повысить лимит"
    },
    "nimbusInfoAgent": {
       "message": "User Agent"
@@ -230,6 +254,9 @@
    "nimbusInfoScreen": {
       "message": "Разрешение экрана"
    },
+   "nimbusIsPro": {
+      "message": "У меня уже есть Nimbus Pro"
+   },
    "nimbusLabelEmail": {
       "message": "Ваш e-mail"
    },
@@ -243,13 +270,19 @@
       "message": "Повторите пароль"
    },
    "nimbusLimitDescription": {
-      "message": "\u003Cb>Перейдите на план Nimbus Pro\u003C/b> и вы сможете загружать до 1 гигабайта новой информации в месяц."
+      "message": "Вы можете перейти на Nimbus Pro, чтобы увеличить ежемесячный лимит данных до 1 ГБ"
+   },
+   "nimbusLimitDeviceDestruction": {
+      "message": "Если вы хотите использовать Nimbus Capture на трёх и более устройствах, то вам нужно приобрести дополнительные лицензии.."
+   },
+   "nimbusLimitDeviceTitle": {
+      "message": "Ваш аккаунт Nimbus Capture уже используется на максимальном количестве устройств."
    },
    "nimbusLimitOf": {
       "message": "из"
    },
    "nimbusLimitSpace": {
-      "message": "К сожалению вы \u003Cb>исчерпали свой месячный лимит\u003C/b> в 100 мегабайт."
+      "message": "Вы не можете загрузить файл, потому что вы почти достигли предела месячного лимита в размере 100 МБ."
    },
    "nimbusLimitUsage": {
       "message": "Использовано:"
@@ -258,7 +291,10 @@
       "message": "Размер файла превышает\u003Cbr>допустимые 10 мегабайт"
    },
    "nimbusLimitVideoDestruction": {
-      "message": "Если вы хотите загрузить\u003Cbr>\u003Cstrong>файл размером больше 10 мегабайт\u003C/strong>,\u003Cbr>вам нужно перейти на план \u003Cstrong>Nimbus Pro\u003C/strong>"
+      "message": "Максимальный размер файла для Nimbus Pro = 1GB\u003Cbr>Если вам нужно увелчить размер, вам нужно отписать на \u003Cb>team@nimbusweb.co\u003C/b>"
+   },
+   "nimbusManageDevices": {
+      "message": "Управление устройствами"
    },
    "nimbusNoThanks": {
       "message": "Нет, спасибо"
@@ -286,6 +322,27 @@
    },
    "nimbusPrivateMessage": {
       "message": "Личное сообщение"
+   },
+   "nimbusProAddWaterMark": {
+      "message": "Возможность добавлять вотермарк/водяной знак"
+   },
+   "nimbusProConvertGIF": {
+      "message": "Конвертирование видео в GIF"
+   },
+   "nimbusProConvertMP4": {
+      "message": "Конвертирование видео в MP4"
+   },
+   "nimbusProSendDropbox": {
+      "message": "Отправляйте картинки и видео в Dropbox"
+   },
+   "nimbusProSendGoogleDrive": {
+      "message": "Отправка видео в Google Drive"
+   },
+   "nimbusProSendYoutube": {
+      "message": "Отправка видео в YouTube"
+   },
+   "nimbusProSupport": {
+      "message": "Приоритетная поддержка"
    },
    "nimbusRate": {
       "message": "Нравится Nimbus Screenshot ? Поставьте ему оценку!"
@@ -330,7 +387,7 @@
       "message": "Выйти из Slack"
    },
    "nimbusSlackSend": {
-      "message": "Отправить в Slack"
+      "message": "В Slack"
    },
    "nimbusSlackWelcome": {
       "message": "Уделите минутку, чтобы прочесть:"
@@ -350,6 +407,9 @@
    "nimbusViewUploads": {
       "message": "Открыть Nimbus Note"
    },
+   "nimbusViewUploadsToDropbox": {
+      "message": "Открыть в Dropbox"
+   },
    "nimbusYoutubeSend": {
       "message": "Сохранить в Youtube"
    },
@@ -359,11 +419,14 @@
    "notificationCrop": {
       "message": "Перетажите для захвата страницы (Нажмите Esc для выхода)"
    },
-   "notificationDesktopCursorAnimation": {
-      "message": "Анимация курсора недоступна в режиме записи рабочего стола. Вместо этого используйте режим «Страница»."
+   "notificationDesktopDrawingTools": {
+      "message": "Панель рисования недоступна в режиме записи рабочего стола. Вместо этого используйте режим «Страница»."
    },
    "notificationDesktopTabSound": {
       "message": "Звук со страницы недоступен в режиме записи рабочего стола. Вместо этого используйте режим «Страница»."
+   },
+   "notificationDesktopVideoCamera": {
+      "message": "Видео камера недоступна в режиме записи рабочего стола. Вместо этого используйте режим «Страница»."
    },
    "notificationEmailFail": {
       "message": "На данный e-mail уже создан аккаунт"
@@ -404,8 +467,59 @@
    "notificationWrong": {
       "message": "Упс, что то пошло не так!. Попробуйте снова."
    },
+   "onlyForChrome": {
+      "message": "Только для Chrome"
+   },
+   "onlyForFirefox": {
+      "message": "Только для Firefox"
+   },
+   "optionLabelEnableWatermark": {
+      "message": "Включить вотермарк"
+   },
+   "optionLabelWatermarkFont": {
+      "message": "Шрифт"
+   },
+   "optionLabelWatermarkFontColor": {
+      "message": "Цвет"
+   },
+   "optionLabelWatermarkFontSize": {
+      "message": "Размер"
+   },
+   "optionLabelWatermarkImage": {
+      "message": "Картинка"
+   },
+   "optionLabelWatermarkSelectFile": {
+      "message": "Выберите файл"
+   },
+   "optionLabelWatermarkSelectPosition": {
+      "message": "Выберите место для вотермарка на скриншоте"
+   },
+   "optionLabelWatermarkSize": {
+      "message": "Размер вотермарка:"
+   },
+   "optionLabelWatermarkSizeLarge": {
+      "message": "Больше"
+   },
+   "optionLabelWatermarkSizeSmall": {
+      "message": "Меньше"
+   },
+   "optionLabelWatermarkText": {
+      "message": "Текст"
+   },
+   "optionLabelWatermarkTransparent": {
+      "message": "Прозрачность вотермарка:"
+   },
+   "optionLabelWatermarkTransparentLarge": {
+      "message": "Больше"
+   },
+   "optionLabelWatermarkTransparentSmall": {
+      "message": "Не прозрачный"
+   },
    "optionsCaptureSettings": {
       "message": "Настройки скриншота"
+   },
+   "optionsGeneral": {
+      "message": "Основные"
    },
    "optionsLabelAfterClicking": {
       "message": "После клика на иконку"
@@ -413,17 +527,26 @@
    "optionsLabelAndThen": {
       "message": "а потом"
    },
+   "optionsLabelAutoShortUrl": {
+      "message": "Сокращать ссылку после отправки"
+   },
    "optionsLabelCanUse": {
       "message": "Доступные обозначения:"
    },
    "optionsLabelDelayedScreenshotTime": {
       "message": "Задержка перед отложенным снимком (сек)"
    },
+   "optionsLabelDepthScreenshot": {
+      "message": "Фильтр глубины цвета (1 - отключен)"
+   },
    "optionsLabelDesktopVideo": {
       "message": "Начать запись окна"
    },
-   "optionsLabelFilenameTemplate": {
-      "message": "Шаблон названия файла"
+   "optionsLabelFilenameTemplateScreencast": {
+      "message": "Шаблон названия скринкаста"
+   },
+   "optionsLabelFilenameTemplateScreenshot": {
+      "message": "Шаблон названия скриншота"
    },
    "optionsLabelHideFixedElements": {
       "message": "Скрывать фиксированные элементы"
@@ -455,11 +578,17 @@
    "optionsLabelShowInfoPrint": {
       "message": "Показывать URL/дату при выводе на печать"
    },
+   "optionsLabelShowNewButton": {
+      "message": "Показывать 'New' после обновления приложения"
+   },
    "optionsLabelStopVideo": {
       "message": "Остановить запись видео"
    },
    "optionsLabelTabVideo": {
       "message": "Начать запись таба/страницы"
+   },
+   "optionsLabelTimeScrollEntirePage": {
+      "message": "Задержка перед прокруткой страницы (мсек)"
    },
    "optionsLabelWantCapture": {
       "message": "делать скриншот"
@@ -478,6 +607,9 @@
    },
    "optionsTitle": {
       "message": "Настройки скриншотов"
+   },
+   "optionsWatermark": {
+      "message": "Вотермарки"
    },
    "panelActions": {
       "message": "Действия"
@@ -518,8 +650,11 @@
    "popupAfterCapture": {
       "message": "Готовый скриншот"
    },
-   "popupAutoDeleteDrawingLabel": {
+   "popupAutoDeleteDrawing": {
       "message": "Автоматическая очистка видео"
+   },
+   "popupAutoDeleteDrawingDescription": {
+      "message": "Вы можете указать через какое время будут удалены фигуры рисования при записи видео"
    },
    "popupBitrateAudioLabel": {
       "message": "Аудио битрейт"
@@ -529,6 +664,9 @@
    },
    "popupBtnBack": {
       "message": "назад"
+   },
+   "popupBtnCameraRecord": {
+      "message": "Только камера"
    },
    "popupBtnDesktopRecord": {
       "message": "Окно"
@@ -551,6 +689,12 @@
    "popupBtnTabRecord": {
       "message": "Страницу"
    },
+   "popupErrorLocalFileMessage": {
+      "message": "Перейдите в настройки расширения и включите опцию \u003Cstrong>'Разрешить открывать локальные файлы по ссылкам'\u003C/strong> После этого, вы сможете делать скриншоты локальных файлов"
+   },
+   "popupErrorLocalFileTitle": {
+      "message": "Нужно разрешение на открытие файлов"
+   },
    "popupFrameRateLabel": {
       "message": "Частота кадров"
    },
@@ -560,11 +704,17 @@
    "popupLabelCursorAnimate": {
       "message": "Анимированный курсор"
    },
+   "popupLabelRecordCamera": {
+      "message": "Видео с web-камеры"
+   },
    "popupLabelRecordMic": {
       "message": "Звук с микрофона"
    },
    "popupLabelRecordTab": {
       "message": "Звук с таба/страницы"
+   },
+   "popupLabelSetting": {
+      "message": "Настройки"
    },
    "popupLabelShowDrawingTools": {
       "message": "Панель рисования"
@@ -574,6 +724,9 @@
    },
    "popupMyNotes": {
       "message": "Мои загрузки"
+   },
+   "popupOpenExtensions": {
+      "message": "Настройки расширений"
    },
    "popupReadManual": {
       "message": "Также, вы можете прочитать инструкцию по работе с приложением"
@@ -586,6 +739,12 @@
    },
    "popupSec": {
       "message": "сек."
+   },
+   "popupSelectMicLabel": {
+      "message": "Микрофон"
+   },
+   "popupSelectWebCamLabel": {
+      "message": "Вебкамера"
    },
    "popupSizeAutoDescription": {
       "message": "(текущее разрешение)"
@@ -610,6 +769,15 @@
    },
    "popupWelcomeVideo": {
       "message": "Добро пожаловать в запись видео"
+   },
+   "rateNotShow": {
+      "message": "Не показывать больше"
+   },
+   "rateRate": {
+      "message": "Оценить аддон"
+   },
+   "rateText": {
+      "message": "Понравился аддон?\u003Cbr>Напишите об этом? Спасибо!"
    },
    "tooltipArrowCurve": {
       "message": "Ломанная стрелка"
@@ -734,11 +902,29 @@
    "tooltipZoomPlus": {
       "message": "Увеличить"
    },
+   "videoConvert": {
+      "message": "Конвертировать"
+   },
+   "videoConvertFrameRate": {
+      "message": "Кол-во кадров"
+   },
+   "videoConvertInfo": {
+      "message": "Вы можете конвертировать видео в другие форматы. Это может занять определенное время. Не закрывайте окно до завершения конвертации."
+   },
+   "videoConvertMp4AndGif": {
+      "message": "Конвертировать в MP4 или GIF"
+   },
+   "videoConvertSize": {
+      "message": "Размер"
+   },
    "videoPanelAnimatedCursor": {
       "message": "Анимированный курсор - Alt+L"
    },
    "videoPanelArrow": {
       "message": "Стрелка - Alt+A"
+   },
+   "videoPanelCamera": {
+      "message": "Вкл/Выкл вебкамеру"
    },
    "videoPanelCheckmark": {
       "message": "Галочка - Alt+C"
@@ -769,5 +955,26 @@
    },
    "videoPanelSquare": {
       "message": "Прямоугольник - Alt+R"
+   },
+   "watermarkLimit": {
+      "message": "Выберите изображение весом до 1 МБ"
+   },
+   "youtubeCreate": {
+      "message": "Создать"
+   },
+   "youtubeName": {
+      "message": "Имя"
+   },
+   "youtubePlaylist": {
+      "message": "Плейлист"
+   },
+   "youtubePrivate": {
+      "message": "Приватное"
+   },
+   "youtubePublic": {
+      "message": "Публичное"
+   },
+   "youtubeUnlisted": {
+      "message": "Не в списке"
    }
 }

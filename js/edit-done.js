@@ -12,146 +12,125 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * */
 
-$(document).ready(function () {
-
-    nimbus_screen.dom.$button_done.click(function () {
-        // $('html, body').css('height', '100%');
-        var done_height = $(window).innerHeight() - 215 - 120 - 65;
-        $('.nsc-done-content').height((done_height > 500 ? 500 : done_height));
+nimbus_screen.editDoneInit = function () {
+    nimbus_screen.dom.$button_done.on('click', function () {
+        const done_height = $(window).innerHeight() - 215 - 120 - 65;
+        $('.nsc-done-content').height((done_height < 500 ? 500 : done_height));
 
         nimbus_screen.dom.$nsc_done_page.show();
         nimbus_screen.dom.$nsc_redactor_page.hide();
 
-        window.setTimeout(function () {
-            slackShare.init();
-            nimbus.init();
-            nimbusRate.showMessage();
-            nimbusAccountPopup.init();
-        }, 200);
+        slackShare.init();
+        nimbusShare.init();
+        nimbus_screen.rate_popup.init();
+        nimbus_screen.account_popup.init();
 
-        nimbus_screen.canvasManager.done();
-
-        var canvaFon = document.getElementById("canvasfon");
-        var canvaBg = document.getElementById("canvasbg");
-        var oCanvas = document.createElement('canvas');
-        // var z = window.devicePixelRatio || 1;
-        var w = canvaFon.width;// * z;
-        var h = canvaFon.height;// * z;
-
-        $('#nsc_indicator_size').text(w + ' ✖ ' + h);
-
-        oCanvas.width = w;
-        oCanvas.height = h;
-
-        var ctx = oCanvas.getContext('2d');
-        ctx.drawImage(canvaFon, 0, 0, w, h, 0, 0, w, h);
-        ctx.drawImage(canvaBg, 0, 0, w, h, 0, 0, w, h);
-
-        var $nsc_preview_img = $('#nsc_preview_img');
-        var $nsc_indicator = $('#nsc_indicator');
-        var $nsc_main_title = $('#nsc_main_title');
-        var $nsc_done_slack = $('#nsc_done_slack');
-        var $nsc_done_nimbus = $('#nsc_done_nimbus');
-        var $nsc_nimbus_comment = $('.nsc-nimbus-comment');
-        var $nsc_preview_loading = $('#nsc_preview_loading');
-        var format = LS.format || 'png';
-        var name = (new Date()).getTime() + 'screensave.' + format;
-        var bgScreen = chrome.extension.getBackgroundPage().screenshot;
-        var path = bgScreen.path + name;
-
-        imgnewdata = oCanvas.toDataURL('image/' + format, LS.imageQuality / 100);
-        $nsc_preview_img.hide();
-        $nsc_indicator.hide();
-        $nsc_done_slack.data('display', $nsc_done_slack.css('display')).hide();
-        $nsc_done_nimbus.data('display', $nsc_done_nimbus.css('display')).hide();
-        $nsc_nimbus_comment.hide();
-        $nsc_preview_loading.show();
-
-        $nsc_preview_img.load(function () {
-            var max_width = 200;
-            if ($nsc_preview_img.width() > 200) {
-                max_width = $nsc_preview_img.width();
+        nimbusShare.checkPremium(function (err, premium) {
+            if (!err && premium.capture && nimbus_screen.getLocationParam() === 'video' && window.is_chrome) {
+                $('#nsc_manage_devices').show();
+                $('#nsc_increase_limit').show();
             }
-            $nsc_indicator.css({'max-width': max_width});
+            if (err || !premium.capture) {
+                $('#nsc_upgrade_nimbus_pro').show();
+            }
+        }, false);
 
-            $nsc_preview_img.show();
-            $nsc_indicator.show();
-            $nsc_done_slack.css('display', $nsc_done_slack.data('display'));
-            $nsc_done_nimbus.css('display', $nsc_done_nimbus.data('display'));
-            $nsc_nimbus_comment.show();
-            $nsc_preview_loading.hide();
-        });
+        if (nimbus_screen.getLocationParam() === 'video' && window.is_chrome) {
+            $('#nsc_button_back').hide();
+            $('.nsc-trigger-panel-container.save-from-disk').hide();
+            $('#nsc_button_slack').hide();
+            $('#nsc_button_print').hide();
+            $('#nsc_button_save_video').show();
+            nimbus_screen.dom.$app_title.text(chrome.i18n.getMessage("nimbusSaveScreencast"));
+            nimbus_screen.dom.$nsc_indicator.addClass('video');
+            nimbus_screen.dom.$preview_loading.find('[data-i18n]').text(chrome.i18n.getMessage('labelPreviewLoadingVideo'));
 
-        $nsc_main_title.attr('href', imgnewdata);
-        $nsc_preview_img.attr('src', imgnewdata);
+            nacl_module.blobToFile()
+        } else {
+            $('#nsc_button_youtube').hide();
+            $('#nsc_preview_img').hide();
+            $('#nsc_button_save_video').hide();
 
-        bgScreen.createBlob(imgnewdata, name, function (size) {
-            showFileSize(size);
-            nimbus_screen.info.file.size = size;
+            nimbus_screen.dom.$app_title.text(chrome.i18n.getMessage("nimbusSaveScreenshot"));
+            nimbus_screen.dom.$nsc_indicator.addClass('screen');
+            nimbus_screen.dom.$preview_loading.find('[data-i18n]').text(chrome.i18n.getMessage('labelPreviewLoading'));
 
-            chrome.extension.sendMessage({msg: 'enable_save_as'}, function (enable_save_as) {
-                if (enable_save_as === 'true') {
-                    var bgScreen = chrome.extension.getBackgroundPage().screenshot;
-                    screenname = bgScreen.getFileName(pageinfo);
+            nimbus_screen.createCanvasDone()
+        }
+    });
 
-                    $("#nsc_button_save_image").append('<div id="flash-save"></div>');
-                    var g = "10", h = null, i = {
-                        data: imgnewdata.split(",")[1].replace(/\+/g, "%2b"),
-                        dataType: "base64",
-                        filename: screenname + '.' + (format == 'jpeg' ? 'jpg' : 'png'),
-                        downloadImage: "images/pattern.png",
-                        width: 100,
-                        height: 35
-                    }, j = {allowScriptAccess: "always"}, k = {
-                        id: "CreateSaveWindow",
-                        name: "CreateSaveWindow",
-                        align: "middle"
-                    };
-                    swfobject.embedSWF("swf/CreateSaveWindow.swf", "flash-save", "100", "35", g, h, i, j, k);
+    $('#nsc_enable_watermark').on('change', function () {
+        if (localStorage.enableWatermark === 'false' || (!localStorage.fileWatermark && localStorage.typeWatermark === 'image')) {
+            $(this).prop("checked", false);
+            chrome.runtime.sendMessage({operation: 'open_page', 'url': 'options.html?watermark'});
+        } else {
+            $('#nsc_preview_img').hide();
+            nimbus_screen.dom.$nsc_indicator.hide();
+            nimbus_screen.dom.$preview_loading.show();
 
-                    $nsc_main_title.append('<div id="flash-save-title"></div>');
-                    i.width = 276;
-                    i.height = 36;
-                    swfobject.embedSWF("swf/CreateSaveWindow.swf", "flash-save-title", "276", "36", g, h, i, j, k);
-                }
-            });
-        });
+            localStorage.enableWatermark = $(this).prop("checked");
+
+            if (nimbus_screen.canvasManager) {
+                nimbus_screen.setWaterMark(localStorage.enableWatermark === 'true', function () {
+                    nimbus_screen.createCanvasDone();
+                })
+            } else {
+                nimbus_screen.createCanvasDone();
+            }
+        }
+    }).prop('checked', localStorage.enableWatermark !== 'false');
+
+    $('#nsc_open_watermark_option').on('click', function () {
+        chrome.runtime.sendMessage({operation: 'open_page', 'url': 'options.html?watermark'});
     });
 
     $('#nsc_nimbus_folder').click(function (e) {
-        nimbus.foldersShowManager();
         e.preventDefault();
+        nimbus.foldersShowManager();
     });
 
     $('#nsc_button_back').click(function () {
-        imgnewdata = null;
         nimbus_screen.dom.$nsc_redactor_page.show();
         nimbus_screen.dom.$nsc_done_page.hide();
-        $('html, body').css('height', 'auto');
+
+        if (!nimbus_screen.canvasManager) {
+            nimbus_screen.dom.$nsc_pre_load.show();
+            nimbus_screen.initScreenPage(nimbus_screen.info.file.origin_patch);
+        }
     });
 
-    $('#nsc_button_save_image, #nsc_main_title').on('click', function () {
-        var bgScreen = chrome.extension.getBackgroundPage().screenshot;
-        bgScreen.download({
-            url: $('#nsc_preview_img').attr('src'),
-            pageinfo: LS.pageinfo
-        });
+    $('#nsc_button_save_pdf').on('click', function () {
+        $(window).off('beforeunload', nimbus_screen.beforeUnload);
+        nimbus_screen.pdf.addImage(nimbus_screen.info.file.data, 'JPEG', 0, 0);
+        nimbus_screen.pdf.save(nimbus_screen.getFileName() + ".pdf");
+        $(this).closest('.nsc-trigger-panel-container').removeClass('active')
     });
 
-    $('#nsc_button_save_video').on('click', function () {
-        chrome.downloads.download({
-            url: localStorage.videoUrl,
-            filename: 'nimbus-record-video-' + getTimeStamp() + '.webm',
-            saveAs: true
-        });
+    $('#nsc_button_save_image, #nsc_button_save_video, #nsc_main_title').on('click', function () {
+        $(window).off('beforeunload', nimbus_screen.beforeUnload);
+        if (window.is_firefox) {
+            chrome.downloads.download({
+                url: window.URL.createObjectURL(window.core.dataUrlToBlob(nimbus_screen.info.file.data)),
+                filename: nimbus_screen.getFileName('format'),
+                saveAs: localStorage.enableSaveAs !== 'false'
+            })
+        } else {
+            chrome.downloads.download({
+                url: window.URL.createObjectURL(nimbus_screen.info.file.blob),
+                filename: nimbus_screen.getFileName('format'),
+                saveAs: localStorage.enableSaveAs !== 'false'
+            });
+        }
     });
 
     $('#nsc_button_copy_to_clipboard').click(function () {
-
+        $(window).off('beforeunload', nimbus_screen.beforeUnload);
+        chrome.runtime.sendMessage({operation: 'copy_to_clipboard', dataUrl: nimbus_screen.info.file.data});
     });
 
     $('#nsc_button_print').click(function () {
-        var f = $("iframe#print")[0],
+        $(window).off('beforeunload', nimbus_screen.beforeUnload);
+        let f = $("iframe#print")[0],
             c = f.contentDocument,
             d = f.contentWindow,
             i = c.getElementById("image"),
@@ -159,28 +138,86 @@ $(document).ready(function () {
         i.onload = function () {
             this.style.width = 718 < this.width ? "100%" : "auto";
 
-            var date = new Date().getDate() < 10 ? '0' + new Date().getDate() : new Date().getDate();
-            var month = new Date().getMonth() < 9 ? '0' + (new Date().getMonth() + 1) : (new Date().getMonth() + 1);
-            var year = new Date().getFullYear();
+            const date = new Date().getDate() < 10 ? '0' + new Date().getDate() : new Date().getDate();
+            const month = new Date().getMonth() < 9 ? '0' + (new Date().getMonth() + 1) : (new Date().getMonth() + 1);
+            const year = new Date().getFullYear();
+            const pageinfo = JSON.parse(localStorage.pageinfo);
 
-            if (LS.showInfoPrint === 'true') {
-                t.innerHTML = LS.pageinfo.name + '<br>' + pageinfo.url + '<br>' + date + '.' + month + '.' + year;
-            }
+            if (localStorage.showInfoPrint === 'true') t.innerHTML = nimbus_screen.getFileName() + '<br>' + pageinfo.url + '<br>' + date + '.' + month + '.' + year;
 
             d.focus();
             d.print();
             i.setAttribute("src", '');
         };
-        i.setAttribute("src", imgnewdata);
+        i.setAttribute("src", nimbus_screen.info.file.data);
     });
 
-    $('.nsc-popup-close button').on('click', function () {
+    let $nsc_video_convert = $('#nsc_video_convert');
+    let $nsc_video_convert_frame_rate = $('#nsc_video_convert_frame_rate');
+    $nsc_video_convert.find('button').on('click', function (e) {
+        if (e.currentTarget.name === 'menu') {
+            $nsc_video_convert.find('.nsc-convert-menu').toggle()
+        }
+
+        if (e.currentTarget.name === 'convert') {
+            nimbusShare.checkPremium(function (err, premium) {
+                if (err || !premium.capture) return;
+
+                const format = $nsc_video_convert.find('input[name=format]:checked').val();
+                const size = nacl_module.video_resolution[$nsc_video_convert.find('input[name=size]').val()];
+                const frame_rate = nacl_module.frame_rate[$nsc_video_convert.find('input[name=frame-rate]').val()];
+
+                $(window).on('beforeunload', nimbus_screen.beforeUnload);
+
+                // if (format === 'gif') {
+                //     nacl_module.createPalette({format: format, size: size, frame_rate: frame_rate}, function () {
+                //         nacl_module.convert({format: format, size: size, frame_rate: frame_rate});
+                //     })
+                // } else {
+                nacl_module.convert({format: format, size: size, frame_rate: frame_rate});
+                // }
+
+                $nsc_video_convert.find('.nsc-convert-menu').hide()
+            });
+        }
+    }).end().find('input').on('change', function (e) {
+        if (e.currentTarget.name === 'size') {
+            const size = nacl_module.video_resolution[e.currentTarget.value];
+            localStorage.videoConvertResolution = e.currentTarget.value;
+            $('#nsc_video_convert_size').text(size.width + 'x' + size.height + 'px')
+        }
+
+        if (e.currentTarget.name === 'format' && e.currentTarget.value === 'gif') {
+            $nsc_video_convert_frame_rate.closest('.nsc-convert-menu-size').show();
+        } else if (e.currentTarget.name === 'format' && e.currentTarget.value !== 'gif') {
+            $nsc_video_convert_frame_rate.closest('.nsc-convert-menu-size').hide();
+        }
+
+        if (e.currentTarget.name === 'frame-rate') {
+            const frame_rate = nacl_module.frame_rate[e.currentTarget.value];
+            localStorage.videoConvertFrameRate = e.currentTarget.value;
+            $nsc_video_convert_frame_rate.text(frame_rate)
+        }
+    }).filter('[name=size]').val(localStorage.videoConvertResolution || 1).trigger('change')
+        .end().filter('[name=frame-rate]').val(localStorage.videoConvertFrameRate || 1).trigger('change');
+
+    $('body').on('click', function (e) {
+        if (!$(e.target).closest('.nsc-indicator-convert-action').length) $nsc_video_convert.find('.nsc-convert-menu').hide()
+    });
+
+    $('.nsc-popup-close button, .nsc-popup a').on('click', function (e) {
         $(this).closest('.nsc-popup').hide();
     });
 
+    $('.nsc-rate-us-close button').on('click', function () {
+        $(this).closest('.nsc-rate-us').hide();
+    });
+
+    $('#nsc_nimbus_rate button[name=feedback]').on('click', nimbus_screen.rate_popup.feedback);
+    $('#nsc_nimbus_rate button[name=not-show-more]').on('click', nimbus_screen.rate_popup.not_show_more);
+
     $('#nsc_nimbus_private_share').change(function () {
-        LS.nimbus_share = !this.checked;
-        localStorage.setItem('nimbus_share', LS.nimbus_share);
+        localStorage.setItem('nimbusShare', this.checked);
     });
 
     $('#nsc_form_login_nimbus').on("submit", function () {
@@ -201,12 +238,21 @@ $(document).ready(function () {
         }
 
         if (!wrong) {
-            nimbus.server.user.auth(email.value, password.value, function (res) {
+            nimbusShare.server.user.auth(email.value, password.value, function (res) {
                 if (res.errorCode === 0) {
                     $form.find('input').val('');
                     $('.nsc-popup').hide();
-                    nimbus.init();
+                    nimbusShare.init();
                     nimbus_screen.togglePanel('nimbus');
+                } else if (res.errorCode === -26) {
+                    $form.find('input').val('');
+                    $('.nsc-popup').hide();
+                    $('#nsc_popup_connect_nimbus_challenge').show().find('input[name=state]').val(res.body.challenge.state);
+                    if (res.body.challenge.type === 'otp') {
+                        $('#nsc_popup_connect_nimbus_challenge').find('img').attr('src', '')
+                    } else {
+                        $('#nsc_popup_connect_nimbus_challenge').find('img').attr('src', 'data:image/png;base64,' + res.body.challenge.image)
+                    }
                 } else {
                     $.ambiance({message: chrome.i18n.getMessage("notificationLoginFail"), type: "error", timeout: 5});
                 }
@@ -217,13 +263,41 @@ $(document).ready(function () {
         $(this).removeClass('wrong');
 
         if ($(this).val().length < 8 ||
-            ($(this).attr('name') == 'email' && !/\S+@\S+\.\S+/.test($(this).val()))) {
+            ($(this).attr('name') === 'email' && !/\S+@\S+\.\S+/.test($(this).val()))) {
             $(this).addClass('wrong');
         }
     });
 
-    $('#nsc_form_register_nimbus').bind("submit", function () {
+    $('#nsc_form_login_nimbus_challenge').on("submit", function () {
         var wrong = false;
+        var $form = $(this);
+        var state = this.elements['state'];
+        var code = this.elements['code'];
+
+        if (code.value.length < 0) {
+            $(password).addClass('wrong').focus();
+            $.ambiance({message: chrome.i18n.getMessage("tooltipPassInfo"), type: "error", timeout: 5});
+            wrong = true;
+        }
+
+        if (!wrong) {
+            nimbusShare.server.user.challenge(state.value, code.value, function (res) {
+                if (res.errorCode === 0) {
+                    $form.find('input').val('');
+                    $('.nsc-popup').hide();
+                    nimbusShare.init();
+                    nimbus_screen.togglePanel('nimbus');
+                } else {
+                    $.ambiance({message: chrome.i18n.getMessage("notificationLoginFail"), type: "error", timeout: 5});
+                }
+            });
+        }
+        return false;
+    });
+
+    $('#nsc_form_register_nimbus').on("submit", function () {
+        var wrong = false;
+        var $form = $(this);
         var email = this.elements['email'];
         var password = this.elements['password'];
         var password_repeat = this.elements['pass-repeat'];
@@ -248,17 +322,20 @@ $(document).ready(function () {
         }
 
         if (!wrong) {
-            nimbus.server.user.register(email.value, password.value, function (res) {
+            nimbusShare.server.user.register(email.value, password.value, function (res) {
                 if (res.errorCode === 0) {
-                    nimbus.server.user.auth(email.value, password.value, function () {
-                        $('.nsc-popup').hide();
-                        nimbus.init();
-                        nimbus_screen.togglePanel('nimbus');
-                    });
+                    $form.find('input').val('');
+                    $('.nsc-popup').hide();
+                    nimbusShare.init();
+                    nimbus_screen.togglePanel('nimbus');
                 } else if (res.errorCode === -4) {
                     $.ambiance({message: chrome.i18n.getMessage("notificationEmailFail"), type: "error", timeout: 5});
                 } else {
-                    $.ambiance({message: chrome.i18n.getMessage("notificationRegisterFail"), type: "error", timeout: 5});
+                    $.ambiance({
+                        message: chrome.i18n.getMessage("notificationRegisterFail"),
+                        type: "error",
+                        timeout: 5
+                    });
                 }
             });
         }
@@ -267,8 +344,8 @@ $(document).ready(function () {
         $(this).removeClass('wrong');
 
         if ($(this).val().length < 8 ||
-            ($(this).attr('name') == 'pass-repeat' && $(this).val() !== $(this).closest('form').find("[name='pass']").val()) ||
-            $(this).attr('name') == 'email' && !/\S+@\S+\.\S+/.test($(this).val())) {
+            ($(this).attr('name') === 'pass-repeat' && $(this).val() !== $(this).closest('form').find("[name='pass']").val()) ||
+            $(this).attr('name') === 'email' && !/\S+@\S+\.\S+/.test($(this).val())) {
             $(this).addClass('wrong');
 
         }
@@ -285,7 +362,7 @@ $(document).ready(function () {
         }
 
         if (!wrong) {
-            nimbus.server.user.remindPassword(email.value, function (res) {
+            nimbusShare.server.user.remindPassword(email.value, function (res) {
                 if (res.errorCode === 0) {
                     $.ambiance({message: chrome.i18n.getMessage("notificationRestoreSent"), timeout: 5});
                     $('.nsc-popup').hide();
@@ -293,7 +370,11 @@ $(document).ready(function () {
                         .find('input[name="email"]').val(email.value).end()
                         .find('input[name="password"]').val('').focus();
                 } else {
-                    $.ambiance({message: chrome.i18n.getMessage("notificationEmailIncorrect"), type: "error", timeout: 5});
+                    $.ambiance({
+                        message: chrome.i18n.getMessage("notificationEmailIncorrect"),
+                        type: "error",
+                        timeout: 5
+                    });
                 }
             });
         }
@@ -306,12 +387,12 @@ $(document).ready(function () {
         }
     });
 
-    $('#nsc_button_nimbus').click(function () {
-        nimbus.init(function (auth) {
+    $('#nsc_button_nimbus').on('click', function () {
+        nimbusShare.init(function (auth) {
             if (!auth) {
                 $('#nsc_popup_connect_nimbus').show();
             } else {
-                if ($('#nsc_done_nimbus').css('display') == 'flex') {
+                if ($('#nsc_done_nimbus').css('display') === 'flex') {
                     $('#nsc_send').trigger('click');
                 } else {
                     nimbus_screen.togglePanel('nimbus');
@@ -321,7 +402,7 @@ $(document).ready(function () {
     });
 
     $('#nsc_nimbus_logout').on('click', function (e) {
-        nimbus.server.user.logout(function (req) {
+        nimbusShare.server.user.logout(function (req) {
             $('#nsc_done_nimbus').css('display', 'none');
             if (slackShare.data) {
                 $('#nsc_send').data('type', 'slack').trigger('change-type');
@@ -331,7 +412,6 @@ $(document).ready(function () {
         });
     });
 
-    $('#nsc_button_youtube').click(youtubeShare.init);
 
     $('.nsc-open-popup-login-nimbus').on('click', function () {
         $('.nsc-popup').hide();
@@ -367,19 +447,6 @@ $(document).ready(function () {
         nimbus_screen.copyTextToClipboard($('#nsc_linked input').val());
     });
 
-    $("#nsc_short_url").click(function () {
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://nimb.ws/dantist_api.php', true);
-        xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-        xhr.onload = function () {
-            //alert(this.responseText);
-            var obj = jQuery.parseJSON(this.responseText);
-            $('#nsc_linked input').val(obj.short_url);
-            nimbus_screen.copyTextToClipboard(obj.short_url);
-        };
-        xhr.send('url=' + encodeURIComponent($('#nsc_linked input').val()));
-    });
-
     /* slack */
 
     $('#nsc_button_slack').click(function () {
@@ -404,32 +471,32 @@ $(document).ready(function () {
     $('#nsc_slack_logout').click(slackShare.logout);
 
     $('#nsc_slack_toggle').click(function (e) {
-        chrome.extension.sendMessage({msg: 'set_setting', key: 'slackPanel', value: false});
+        chrome.runtime.sendMessage({operation: 'set_option', key: 'slackPanel', value: false});
         $('#nsc_done_slack').css('display', 'none');
         return false;
     });
 
     $('#nsc_slack_channel_search').on('keyup', function (e) {
-        var $nsc_slack_list_group = $('#nsc_slack_list_group');
-        var $list = $nsc_slack_list_group.find('li:visible');
-        var index = $list.index($('.nsc-slack-list-selected'));
+        let $nsc_slack_list_group = $('#nsc_slack_list_group');
+        let $list = $nsc_slack_list_group.find('li:visible');
+        let index = $list.index($('.nsc-slack-list-selected'));
         $list.eq(index).removeClass('nsc-slack-list-selected');
 
-        if (index == $list.length - 1) {
+        if (index === $list.length - 1) {
             index = -1
         }
 
-        if (e.keyCode == 40 /*ArrowDown*/) {
+        if (e.keyCode === 40 /*ArrowDown*/) {
             $list.eq(index + 1).addClass('nsc-slack-list-selected');
-        } else if (e.keyCode == 38 /*ArrowUp*/) {
+        } else if (e.keyCode === 38 /*ArrowUp*/) {
             $list.eq(index - 1).addClass('nsc-slack-list-selected');
         } else {
-            var search_text = $(this).val();
-            var is_first_item = false;
+            let search_text = $(this).val();
+            let is_first_item = false;
             $('#nsc_slack_channel, #nsc_slack_user').find('li').each(function () {
-                var text = $(this).find('a').text();
+                let text = $(this).find('a').text();
                 $(this).removeClass('nsc-slack-list-selected');
-                if (search_text != '' && !new RegExp(search_text, 'gi').test(text)) {
+                if (search_text !== '' && !new RegExp('^' + search_text, 'i').test(text)) {
                     $(this).hide();
                 } else {
                     $(this).show();
@@ -440,59 +507,260 @@ $(document).ready(function () {
                 }
             });
         }
-        var $item_active = $('#nsc_slack_list_group .nsc-slack-list-selected');
+        let $item_active = $('#nsc_slack_list_group .nsc-slack-list-selected');
         if ($item_active.length) {
-            var top_active_elem = $item_active.position().top;
+            let top_active_elem = $item_active.position().top;
             $nsc_slack_list_group.scrollTop(top_active_elem + $nsc_slack_list_group.scrollTop());
         }
     });
 
-    /* /slack */
+    /* end slack */
 
-    $('#nsc_environment_info').on('click', function () {
-        enviroment_info_change();
+    /* youtube */
+
+    $('#nsc_button_youtube').on('click', function () {
+        nimbusShare.checkPremium(function (err, premium) {
+            if (err || !premium.capture) return;
+
+            if (youtubeShare.getAccessToken()) {
+                if ($('#nsc_done_youtube').css('display') === 'flex') {
+                    $('#nsc_send').trigger('click');
+                } else {
+                    nimbus_screen.togglePanel('youtube');
+                    youtubeShare.viewPlaylist();
+                }
+            } else {
+                youtubeShare.refreshToken('panel');
+            }
+        });
+    });
+
+    $('#nsc_youtube_logout').on('click', youtubeShare.clearData);
+
+    $('#nsc_youtube_playlist_add').find('button[name=cleared]').on('click', function () {
+        $('#nsc_youtube_playlist_add').hide();
+        $('#nsc_youtube_playlist_show_add').show();
+    });
+
+    $('#nsc_youtube_playlist_add').find('button[name=add]').on('click', function (e) {
+        var name = $('#nsc_youtube_playlist_add').find('input[name=name]').val();
+        if (name === '') return;
+
+        youtubeShare.httpRequest('POST', 'https://www.googleapis.com/youtube/v3/playlists?part=snippet,status', JSON.stringify({
+            "snippet": {
+                "title": name
+            }
+        }), function () {
+            $('#nsc_youtube_playlist_add').show().find('input[name=name]').val('');
+            window.setTimeout(function () {
+                youtubeShare.viewPlaylist();
+            }, 500);
+        });
+    });
+
+    $('#nsc_youtube_playlist_add').find('input[name=name]').on('keypress', function (e) {
+        if (e.keyCode === 13) $('#nsc_youtube_playlist_add').find('button[name=add]').trigger('click')
+    });
+
+    $('#nsc_youtube_playlist_show_add').on('click', function () {
+        $('#nsc_youtube_playlist_add').show().find('input[name=name]').focus();
+        $('#nsc_youtube_playlist_show_add').hide();
+    });
+
+    $('input[name=youtubePrivacy]').on('change', function () {
+        localStorage.youtubePrivacy = this.value;
+    }).filter('[value=' + (localStorage.youtubePrivacy || 'public') + ']').prop('checked', true);
+
+    /* end youtube */
+
+    /* dropbox */
+
+    $('#nsc_button_dropbox').on('click', function () {
+        nimbusShare.checkPremium(function (err, premium) {
+            if (err || !premium.capture) return;
+            if (dropboxShare.getAccessToken()) {
+                if (nimbus_screen.getLocationParam() === 'video') {
+                    dropboxShare.saveToDropbox(nimbus_screen.info.file.data)
+                } else {
+                    dropboxShare.saveToDropbox(nimbus_screen.dataURLtoBlob(nimbus_screen.info.file.data))
+                }
+            } else {
+                dropboxShare.login();
+            }
+        });
+    });
+
+    $('#nsc_dropbox_open_folders').click(function () {
+        dropboxShare.getFolders();
+    });
+
+    $('#nsc_dropbox_logout').click(function () {
+        if ($(this).closest('.nsc-trigger-panel-container').hasClass('active')) {
+            $(this).closest('.nsc-trigger-panel-container').removeClass('active')
+        }
+        dropboxShare.logout();
+    });
+
+    dropboxShare.setUploadFolderTooltip();
+
+    /* end dropbox */
+
+    /**/
+
+    $('#nsc_button_google_drive').on('click', function () {
+        if (nimbus_screen.getLocationParam() === 'video') {
+            nimbusShare.checkPremium(function (err, premium) {
+                if (err || !premium.capture) return;
+
+                if (googleShare.getAccessToken()) {
+                    googleShare.refreshToken('send')
+                } else {
+                    googleShare.refreshToken()
+                }
+            });
+        } else {
+            if (googleShare.getAccessToken()) {
+                googleShare.refreshToken('send')
+            } else {
+                googleShare.refreshToken()
+            }
+        }
+    });
+
+    googleShare.setUploadFolderTooltip();
+
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('.nsc-trigger-panel-container').length) {
+            $('.nsc-trigger-panel-container').removeClass('active')
+        }
+        if ($(e.target).hasClass('nsc-choose-trigger-panel')) {
+            $(e.target).closest('.nsc-trigger-panel-container').toggleClass('active')
+        }
+    });
+
+    $('#nsc_google_drive_logout').click(function () {
+        if ($(this).closest('.nsc-trigger-panel-container').hasClass('active')) {
+            $(this).closest('.nsc-trigger-panel-container').removeClass('active')
+        }
+        googleShare.clearData();
+        googleShare.setUploadFolder({"id": "root", "title": "Main folder"});
+    });
+
+    $('#nsc_google_drive_share').on('change', function () {
+        localStorage.shareOnGoogle = !$(this).prop('checked');
+    });
+
+    $('#nsc_google_drive_open_folders').click(function () {
+        googleShare.getFolders(googleShare.getUploadFolder().id);
+    });
+
+    $('#nsc_file_manager button[name=done]').on('click', function () {
+        if ($('#nsc_file_manager').hasClass('is_dropbox')) {
+            let info = {path: $('.current').find('div').data('path'), name: $('.current').find('div').data('name')};
+            dropboxShare.setUploadFolder(info);
+            dropboxShare.setUploadFolderTooltip();
+        } else {
+            let info = {id: $('.current').find('div').data('id'), title: $('.current').find('span').text()};
+            googleShare.setUploadFolder(info);
+            googleShare.setUploadFolderTooltip();
+        }
+        $('#nsc_file_manager').fadeOut("fast");
+    });
+
+    /**/
+
+    $('#nsc_environment_info').on('change', function () {
         window.scrollTo(0, 10000);
+        var checked = $(this).prop('checked');
+        var $comment = $('#nsc_comment');
+        var pageinfo = JSON.parse(localStorage.pageinfo);
+        var userAgent = navigator.userAgent;
+        var browserName = navigator.appName;
+        var platform = navigator.platform;
+        var fullVersion = '' + parseFloat(navigator.appVersion);
+        var verOffset;
+        if ((verOffset = userAgent.indexOf("Opera")) !== -1) {
+            browserName = "Opera";
+            fullVersion = userAgent.substring(verOffset + 6);
+            if ((verOffset = userAgent.indexOf("Version")) !== -1)
+                fullVersion = userAgent.substring(verOffset + 8);
+        } else if ((verOffset = userAgent.indexOf("Chrome")) !== -1) {
+            browserName = "Chrome";
+            fullVersion = userAgent.substring(verOffset + 7);
+        }
+        var info = '\n\n-----------------\n' +
+            chrome.i18n.getMessage("nimbusInfoPage") + ': ' + pageinfo.url + '\n' +
+            chrome.i18n.getMessage("nimbusInfoScreen") + ': ' + screen.width + 'x' + screen.height + '\n' +
+            chrome.i18n.getMessage("nimbusInfoBrowser") + ': ' + browserName + ' ' + fullVersion + '\n' +
+            chrome.i18n.getMessage("nimbusInfoAgent") + ': ' + userAgent + '\n' +
+            chrome.i18n.getMessage("nimbusInfoPlatform") + ': ' + platform;
+
+        localStorage.setItem('environmentInfo', checked);
+        if (checked) {
+            $comment.val($comment.val() + info).outerHeight(220);
+        } else {
+            $comment.val($comment.val().match(/([\s|\S]+)?\n\n-----------------[\s|\S]+/)[1]).height(22);
+        }
+
+        var max_width = 400;
+        if (nimbus_screen.getLocationParam() === 'video') {
+            var $nsc_stream_video = $('#nsc_stream_video');
+            if ($nsc_stream_video.width() > 200) {
+                max_width = $nsc_stream_video.width();
+            }
+        } else {
+            var $nsc_preview_img = $('#nsc_preview_img');
+            if ($nsc_preview_img.width() > 200) {
+                max_width = $nsc_preview_img.width();
+            }
+        }
+        $('#nsc_indicator').css({'max-width': max_width});
     });
 
     $('#nsc_send').on('change-type', function () {
-        var type = $(this).data('type');
-        if (type === 'youtube') {
-            $('#nsc_send span').text(chrome.i18n.getMessage("nimbusYoutubeSend"));
-        } else if (type === 'slack') {
-            $('#nsc_send span').text(chrome.i18n.getMessage("nimbusSlackSend"));
-        } else if (type === 'nimbus') {
-            $('#nsc_send span').text(chrome.i18n.getMessage("nimbusSend"));
-        } else {
-            $('#nsc_send span').text(chrome.i18n.getMessage("nimbusSend"));
+        let self = this;
+        switch ($(self).data('type')) {
+            case 'youtube':
+                $(self).find('span').text(chrome.i18n.getMessage("nimbusYoutubeSend"));
+                break;
+            case 'slack':
+                $(self).find('span').text(chrome.i18n.getMessage("nimbusSlackSend"));
+                break;
+            default :
+                $(self).find('span').text(chrome.i18n.getMessage("nimbusSend"));
+                break;
         }
     })
         .trigger('change-type')
         .on('click', function () {
-            var channel = false;
+            $(window).off('beforeunload', nimbus_screen.beforeUnload);
+
+            let channel = false;
             if ($(this).data('channel')) {
                 channel = $(this).data('channel');
                 $(this).data('channel', false);
             }
-            if ($('#nsc_send').data('type') === 'youtube') {
-                chrome.identity.getAuthToken({'interactive': true}, function (token) {
-                    if (chrome.runtime.lastError) {
-                        console.error(chrome.runtime.lastError);
-                    }
-                    if (typeof token !== 'undefined') {
-                        gFolders.setAccessToken(token);
-                        youtubeShare.sendVideo(channel);
-                    }
-                });
-            } else if (slackShare.data && $('#nsc_send').data('type') === 'slack') {
-                slackShare.sendScreenshot(imgnewdata, screenname, channel);
+
+            if ($(this).data('type') === 'youtube') {
+                if (nimbus_screen.info.file.format === 'gif') {
+                    alert('Youtube doesn\'t support GIF');
+                } else {
+                    if (channel) localStorage.youtubePlaylist = channel;
+                    youtubeShare.refreshToken('send');
+                }
+            } else if ($(this).data('type') === 'slack') {
+                slackShare.sendScreenshot(nimbus_screen.info.file.data, channel);
             } else {
-                nimbus.server.user.authState(function (res) {
+                nimbusShare.server.user.authState(function (res) {
                     if (res.errorCode === 0 && res.body && res.body.authorized) {
-                        if (param === 'video') {
-                            pageinfo.title = 'Screencast-' + LS.pageinfo.time;
-                            nimbus.startUploadVideo(pageinfo, nacl_module.videoBlob, channel);
+                        if (nimbus_screen.getLocationParam() === 'video') {
+                            if (nimbus_screen.info.file.format === 'gif') {
+                                nimbusShare.startUploadScreen(nimbus_screen.info.file.data, channel);
+                            } else {
+                                nimbusShare.startUploadVideo(nimbus_screen.info.file.blob, channel);
+                            }
                         } else {
-                            nimbus.startUploadScreen(pageinfo, imgnewdata, channel);
+                            nimbusShare.startUploadScreen(nimbus_screen.info.file.data, channel);
                         }
                     } else {
                         $('#nsc_popup_connect_nimbus').show();
@@ -501,58 +769,74 @@ $(document).ready(function () {
             }
         });
 
+    $('#nsc_screen_name').val(nimbus_screen.getFileName());
+    $('#nsc_done_youtube_name').val(nimbus_screen.getFileName());
 
-    $('#nsc_screen_name').on('change', function () {
-        LS.pageinfo.name = this.value;
-    });
+    if (localStorage.getItem('environmentInfo') === 'true') {
+        $('#nsc_environment_info').prop('checked', true).trigger('change');
+    }
 
-    chrome.extension.onRequest.addListener(function (req) {
-        // console.log('onRequest', req);
-        if (req.action == 'slack_auth' && req.oauth.access_token != 'null') {
+    if (localStorage.slackPanel === 'true' && nimbus_screen.getLocationParam() !== 'video') {
+        chrome.runtime.sendMessage({msg: 'get_slack_data'}, function (data) {
+            if (data) {
+                slackShare.data = data;
+                slackShare.init();
+                nimbus_screen.togglePanel('slack');
+            }
+            if (nimbus_screen.getLocationParam() === 'slack') {
+                $('#nsc_button_slack').click();
+            }
+        });
+    }
+
+    if (localStorage.youtubePanel === 'true' && nimbus_screen.getLocationParam() === 'video') {
+        youtubeShare.refreshToken('panel')
+    }
+
+    if (window.core.language === 'ru') {
+        $('#nsc_link_twitter').hide();
+        $('#nsc_link_facebook').hide();
+        $('.nsc-heading-actions').append('<span><a href="https://nimbusweb.co/jobs.php" target="_blank">Мы ищем таланты!</a></span>')
+    }
+
+    chrome.runtime.onMessage.addListener(function (req) {
+        if (req.action === 'slack_auth') {
             slackShare.data = req;
             slackShare.init();
             nimbus_screen.togglePanel('slack');
         }
-        if (req.action == 'nimbus_auth') {
-            nimbus.init();
+        if (req.action === 'access_nimbus') {
+            nimbusShare.show.info();
+            nimbusShare.show.folders();
             nimbus_screen.togglePanel('nimbus');
         }
-    });
+        if (req.action === 'access_dropbox') {
+            dropboxShare.setUploadFolderTooltip();
+        }
+        if (req.operation === 'access_youtube') {
+            if (youtubeShare.type === 'panel') {
+                youtubeShare.viewPlaylist();
+                nimbus_screen.togglePanel('youtube');
+            } else {
+                $('#nsc_message_view_uploads, #nsc_message_view_uploads_dropbox, #nsc_linked').removeClass('visible');
+                $('#nsc_loading_upload_file').addClass('visible').text('');
 
-    chrome.extension.sendMessage({msg: 'get_setting', key: 'environment_info'}, function (val) {
-        if (val === 'true') {
-            $('#nsc_environment_info').attr('checked', true).prop('checked', true);
-            enviroment_info_change();
+                youtubeShare.save();
+            }
+            youtubeShare.type = undefined;
+        }
+        if (req.operation === 'access_google') {
+            googleShare.setUploadFolderTooltip();
+            if (googleShare.type === 'send') {
+                $(window).off('beforeunload', nimbus_screen.beforeUnload);
+
+                $('#nsc_message_view_uploads, #nsc_message_view_uploads_dropbox, #nsc_linked').removeClass('visible');
+                $('#nsc_loading_upload_file').addClass('visible').text('');
+
+                googleShare.save()
+            }
+            googleShare.type = undefined;
         }
     });
 
-    chrome.extension.sendMessage({msg: 'get_setting', key: 'slackPanel'}, function (panel) {
-        // console.log('slackPanel', panel);
-        chrome.extension.sendMessage({msg: 'get_slack_data'}, function (data) {
-            if (data && param != 'video') {
-                slackShare.data = data;
-                slackShare.init();
-                if (panel == 'true') {
-                    nimbus_screen.togglePanel('slack');
-                }
-            }
-        });
-    });
-
-    chrome.extension.sendMessage({msg: 'get_setting', key: 'nimbusPanel'}, function (panel) {
-        nimbus.server.user.authState(function (res) {
-            if (res.errorCode == 0 && res.body && res.body.authorized && panel == 'true') {
-                nimbus_screen.togglePanel('nimbus');
-            }
-        });
-    });
-
-    chrome.extension.sendMessage({msg: 'get_file_name', pageinfo: LS.pageinfo}, function (response) {
-        if (param != 'video') {
-            LS.pageinfo.name = response;
-            $('#nsc_screen_name').val(response)
-        }
-    });
-
-
-});
+};

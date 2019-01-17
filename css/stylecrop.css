@@ -1,4 +1,4 @@
-#areafon {
+#nsc_crop {
     position: fixed;
     height: 100%;
     width: 100%;
@@ -8,7 +8,7 @@
     cursor: crosshair;
 }
 
-#areafon * {
+#nsc_crop * {
     font-size: 14px;
     line-height: 16px;
     font-weight: normal;
@@ -16,7 +16,7 @@
     box-sizing: border-box;
 }
 
-#areafon button:focus {
+#nsc_crop button:focus {
     outline: none;
 }
 
@@ -238,20 +238,20 @@
 
 /*--------------------crop buttons --------------------------------------*/
 
-#areafon #screenshotbutton.crop_buttons,
+#nsc_crop #screenshotbutton.crop_buttons,
 #screenshotbutton.crop_buttons {
     width: 108px;
     margin-left: -54px;
 }
 
-#areafon #screenshotbutton.crop_buttons .edit_ns-btn.edit,
+#nsc_crop #screenshotbutton.crop_buttons .edit_ns-btn.edit,
 #screenshotbutton.crop_buttons .edit_ns-btn.edit {
     border-right: 1px solid #767676;
 }
 
 /*------------------------------*/
 
-#areafon .cropNotification {
+#nsc_crop .cropNotification {
     position: fixed;
     top: 0;
     right: 0;
@@ -304,7 +304,7 @@
 /*height: 18px;*/
 /*}*/
 
-#theloupe {
+#nsc_crop_loupe {
     position: absolute;
     width: 240px;
     /*height: 255px;*/
@@ -320,7 +320,7 @@
     /*box-shadow: rgb(0, 0, 0) 0px 0px 20px inset;*/
 }
 
-#theloupe span {
+#nsc_crop_loupe span {
     color: #333;
     font-family: verdana, arial, helvetica, sans-serif;
     margin-left: 3px;
@@ -332,7 +332,7 @@
     text-align: left;
 }
 
-#theloupecanvas {
+#nsc_crop_loupe_canvas {
     /*width: 200px;*/
     /*height: 200px;*/
     /*border-radius: 50%;*/

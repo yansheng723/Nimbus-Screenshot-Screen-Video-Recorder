@@ -2,173 +2,218 @@
  * Created by hasesanches on 2017.
  */
 
-$.get(chrome.extension.getURL('template/panel-video-compact.html'), function (data) {
-    $('body').append(data).append($('<div>').addClass('nsc-video-editor'));
+(function () {
 
-    var body = document.body,
-        html = document.documentElement,
-        page_w = Math.max(body.scrollWidth, body.offsetWidth, html.clientWidth, html.scrollWidth, html.offsetWidth),
-        page_h = Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight),
-        intervalClear = null;
+    // if (window.__nscContentScriptVideoPanel) return;
+    // window.__nscContentScriptVideoPanel = true;
 
-    var videoEditor = $('.nsc-video-editor').width(page_w).height(page_h).videoEditor();
+    $.get(chrome.runtime.getURL('template/panel-video-compact.html'), function (data) {
+        $('body').append(data).append($('<div>').addClass('nsc-video-editor'));
 
-    $('.nsc-video-editor').on('nimbus-editor-change', function (e, tools, color) {
-        if (tools) {
-            var $this = $('[data-event-param=' + tools + ']');
-            var $button = $this.closest('.nsc-panel-button');
-            var $dropdown = $button.find('.nsc-panel-dropdown');
-            $('.nsc-panel-button').removeClass('active').filter($button).addClass('active');
-            if ($dropdown.length) $button.find('.nsc-panel-text span').attr('class', $this.attr('class'));
-        }
-        if (color) {
-            $('#nsc_panel_button_colors').css('background-color', color);
-        }
-    });
+        var body = document.body,
+            html = document.documentElement,
+            page_w = Math.max(body.scrollWidth, body.offsetWidth, html.clientWidth, html.scrollWidth, html.offsetWidth),
+            page_h = Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight),
+            intervalClear = null, videoPanelMove = false;
 
-    $('*[data-event^=nimbus-editor]').on('click', function () {
-        videoEditor.trigger($(this).data('event'), $(this).data('eventParam'));
-        if ($(this).data('event') == 'nimbus-editor-active-tools') {
-            localStorage.videoEditorTools = $(this).data('eventParam');
-        }
-    });
 
-    $('*[data-i18n]')
-        .on('mouseenter', function () {
-            $('.nsc-panel-tooltip-layout').text(chrome.i18n.getMessage($(this).data('i18n')));
-            $('.nsc-panel.nsc-panel-compact').addClass('nsc-tooltip');
-        })
-        .on('mouseleave', function () {
-            $('.nsc-panel.nsc-panel-compact').removeClass('nsc-tooltip')
+        var videoEditor = $('.nsc-video-editor').width(page_w).height(page_h).videoEditor();
+
+        $('.nsc-video-editor').on('nimbus-editor-change', function (e, tools, color) {
+            if (tools) {
+                let $this = $('[data-event-param=' + tools + ']');
+                let $button = $this.closest('.nsc-panel-button');
+                $('.nsc-panel-button').removeClass('active').filter($button).addClass('active');
+                if ($button.hasClass('opened')) {
+                    $button.removeClass('opened').find('.nsc-panel-text').empty().append(
+                        $this.clone().on('click touchend', function () {
+                            videoEditor.trigger($(this).data('event'), $(this).data('eventParam'));
+                            if ($(this).data('event') === 'nimbus-editor-active-tools') localStorage.videoEditorTools = $(this).data('eventParam');
+                        }));
+                }
+            }
+            if (color) {
+                $('#nsc_panel_button_colors').css('background-color', color);
+            }
         });
 
-    $('.nsc-panel-toggle-button').on('click', function () {
-        $('.nsc-panel.nsc-panel-compact').hide();
-    });
+        $('*[data-event^=nimbus-editor]').on('click touchend', function () {
+            videoEditor.trigger($(this).data('event'), $(this).data('eventParam'));
+            if ($(this).data('event') === 'nimbus-editor-active-tools') localStorage.videoEditorTools = $(this).data('eventParam');
+        });
 
-    $('.nsc-panel-button').on('click', function () {
-        var $this = $(this);
-        if ($this.hasClass('nsc-panel-button')) {
-            $('.nsc-panel-button').not($this).removeClass('opened');
-            if ($this.find('.nsc-panel-dropdown').length) $this.toggleClass('opened');
+        $('*[data-i18n]')
+            .on('mouseenter touchenter', function () {
+                $('.nsc-panel-tooltip-layout').text(chrome.i18n.getMessage($(this).data('i18n')));
+                $('.nsc-panel.nsc-panel-compact').addClass('nsc-tooltip');
+            })
+            .on('mouseleave touchleave', function () {
+                $('.nsc-panel.nsc-panel-compact').removeClass('nsc-tooltip')
+            });
+
+        $('.nsc-panel-toggle-button').on('click', function () {
+            $('.nsc-panel.nsc-panel-compact').hide();
+        });
+
+        $('.nsc-panel-trigger').on('click touchend', function () {
+            let $this_button = $(this).closest('.nsc-panel-button');
+            $('.nsc-panel-button').not($this_button).removeClass('opened');
+            if ($this_button.find('.nsc-panel-dropdown').length) $this_button.toggleClass('opened');
+        });
+
+        function panelKeyDown(e) {
+            if (e.altKey) {
+
+                console.log(e.key, e)
+                switch (e.key) {
+                    case 'v':
+                        if ($('.nsc-panel.nsc-panel-compact:visible').length) {
+                            $('.nsc-panel.nsc-panel-compact').hide();
+                            chrome.runtime.sendMessage({operation: 'set_video_panel', value: 'false'});
+                            videoEditor.trigger('nimbus-editor-active-tools', false);
+                        } else {
+                            $('.nsc-panel.nsc-panel-compact').show();
+                            chrome.runtime.sendMessage({operation: 'set_video_panel', value: 'true'});
+
+                            // if (!deawingTools) {
+                            //     deawingTools = true;
+                            videoEditor.trigger('nimbus-editor-active-tools', videoEditorTools);
+                            // }
+                        }
+                        break;
+                    case 's':
+                        videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'cursorDefault');
+                        videoEditorTools = 'cursorDefault';
+                        chrome.runtime.sendMessage({operation: 'set_video_editor_tools', tools: 'cursorDefault'});
+                        break;
+                    case 'g':
+                        videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'cursorShadow');
+                        videoEditorTools = 'cursorShadow';
+                        chrome.runtime.sendMessage({operation: 'set_video_editor_tools', tools: 'cursorShadow'});
+                        break;
+                    case 'l':
+                        videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'cursorRing');
+                        videoEditorTools = 'cursorRing';
+                        chrome.runtime.sendMessage({operation: 'set_video_editor_tools', tools: 'cursorRing'});
+                        break;
+                    case 'p':
+                        videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'pen');
+                        videoEditorTools = 'pen';
+                        chrome.runtime.sendMessage({operation: 'set_video_editor_tools', tools: 'pen'});
+                        break;
+                    case 'a':
+                        videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'arrow');
+                        videoEditorTools = 'arrow';
+                        chrome.runtime.sendMessage({operation: 'set_video_editor_tools', tools: 'arrow'});
+                        break;
+                    case 'r':
+                        videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'square');
+                        videoEditorTools = 'square';
+                        chrome.runtime.sendMessage({operation: 'set_video_editor_tools', tools: 'square'});
+                        break;
+                    case 'm':
+                        videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'notifRed');
+                        videoEditorTools = 'notifRed';
+                        chrome.runtime.sendMessage({operation: 'set_video_editor_tools', tools: 'notifRed'});
+                        break;
+                    case 'q':
+                        videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'notifBlue');
+                        videoEditorTools = 'notifBlue';
+                        chrome.runtime.sendMessage({operation: 'set_video_editor_tools', tools: 'notifBlue'});
+                        break;
+                    case 'c':
+                        videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'notifGreen');
+                        videoEditorTools = 'notifGreen';
+                        chrome.runtime.sendMessage({operation: 'set_video_editor_tools', tools: 'notifGreen'});
+                        break;
+                    case 'n':
+                        videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'clear');
+                        break;
+                    case 'u':
+                        videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'clearAll');
+                        break;
+                }
+            }
+        }
+
+        $('.nsc-panel.nsc-panel-compact .nsc-panel-move')
+            .on('mousedown', function () {
+                videoPanelMove = true;
+            })
+            .on('mouseup', function () {
+                videoPanelMove = false;
+            });
+
+        $(window).on('keydown', panelKeyDown)
+            .on('mousemove', function (e) {
+                if (videoPanelMove) {
+                    $('.nsc-panel.nsc-panel-compact').css({left: e.clientX - 2, bottom: $(window).height() - e.clientY - 46 / 2});
+                }
+            })
+            .on('mouseup', function () {
+                videoPanelMove = false;
+            });
+
+
+        var $web_camera = $('#nimbus_web_camera_toggle');
+        var $button_play = $('#nsc_panel_button_play');
+        var $button_pause = $('#nsc_panel_button_pause');
+        var $button_stop = $('#nsc_panel_button_stop');
+        $button_play.hide();
+        chrome.runtime.onMessage.addListener(function (req, sender, sendResponse) {
+            if (req.operation === 'status_video') {
+                if (!req.status) {
+                    // $('.nsc-panel.nsc-panel-compact').hide();
+                    // $('.nsc-video-editor').hide();
+
+                    // TODO: Доработать возобновление работы
+                    $('html body').css({cursor: 'auto', 'user-select': 'auto'});
+                    $('.nsc-panel.nsc-panel-compact').remove();
+                    $('.nsc-video-editor').remove();
+                    $(window).off('keydown', panelKeyDown);
+                    chrome.runtime.onMessage.removeListener(arguments.callee);
+                    intervalClear && clearInterval(intervalClear)
+                } else if (req.state === 'recording') {
+                    $button_play.hide();
+                    $button_pause.show();
+                } else {
+                    $button_pause.hide();
+                    $button_play.show();
+                }
+            }
+            if (req.operation === 'nsc_video_panel_is') {
+                sendResponse(true)
+            }
+        });
+
+        $web_camera.on('click', function () {
+            chrome.runtime.sendMessage({operation: 'web_camera_toggle_panel'});
+        });
+
+        $button_play.on('click touchend', function () {
+            chrome.runtime.sendMessage({operation: 'status_video_change', status: 'play'});
+        });
+        $button_pause.on('click touchend', function () {
+            chrome.runtime.sendMessage({operation: 'status_video_change', status: 'pause'});
+        });
+        $button_stop.on('click touchend', function () {
+            chrome.runtime.sendMessage({operation: 'status_video_change', status: 'stop'});
+        });
+
+        if (deawingTools) {
+            $('.nsc-panel.nsc-panel-compact').show();
+            videoEditor.trigger('nimbus-editor-active-tools', videoEditorTools);
         } else {
-            $('.nsc-panel-button').removeClass('opened');
+            $('.nsc-panel.nsc-panel-compact').hide();
+            videoEditor.trigger('nimbus-editor-active-tools', false);
         }
-    });
 
-    function panelKeyDown(e) {
-        if (e.altKey) {
-            switch (e.key) {
-                case 'v':
-                    if ($('.nsc-panel.nsc-panel-compact:visible').length) {
-                        $('.nsc-panel.nsc-panel-compact').hide();
-                        chrome.extension.sendMessage({operation: 'video_deawing_tools', value: 'false'});
-                    } else {
-                        $('.nsc-panel.nsc-panel-compact').show();
-                        chrome.extension.sendMessage({operation: 'video_deawing_tools', value: 'true'});
-                    }
-                    break;
-                case 's':
-                    videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'cursorDefault');
-                    localStorage.videoEditorTools = 'cursorDefault';
-                    break;
-                case 'g':
-                    videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'cursorShadow');
-                    localStorage.videoEditorTools = 'cursorShadow';
-                    break;
-                case 'l':
-                    videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'cursorRing');
-                    localStorage.videoEditorTools = 'cursorRing';
-                    break;
-                case 'p':
-                    videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'pen');
-                    localStorage.videoEditorTools = 'pen';
-                    break;
-                case 'a':
-                    videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'arrow');
-                    localStorage.videoEditorTools = 'arrow';
-                    break;
-                case 'r':
-                    videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'square');
-                    localStorage.videoEditorTools = 'square';
-                    break;
-                case 'm':
-                    videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'notifRed');
-                    localStorage.videoEditorTools = 'notifRed';
-                    break;
-                case 'q':
-                    videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'notifBlue');
-                    localStorage.videoEditorTools = 'notifBlue';
-                    break;
-                case 'c':
-                    videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'notifGreen');
-                    localStorage.videoEditorTools = 'notifGreen';
-                    break;
-                case 'n':
-                    videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'clear');
-                    localStorage.videoEditorTools = 'clear';
-                    break;
-                case 'u':
-                    videoEditor && videoEditor.trigger('nimbus-editor-active-tools', 'clearAll');
-                    localStorage.videoEditorTools = 'clearAll';
-                    break;
-            }
+        if (deleteDrawing) {
+            intervalClear = setInterval(function () {
+                videoEditor.trigger('nimbus-editor-remove-old');
+            }, deleteDrawing * 1000)
         }
-    }
 
-    $(window).on('keydown', panelKeyDown).resize(function () {
-        $('.nsc-panel.nsc-panel-compact').css('top', window.innerHeight - 46);
-    }).trigger('resize');
-
-    var $button_play = $('#nsc_panel_button_play');
-    var $button_pause = $('#nsc_panel_button_pause');
-    var $button_stop = $('#nsc_panel_button_stop');
-    $button_play.hide();
-    chrome.extension.onMessage.addListener(function (req, sender, sendResponse) {
-        if (req.operation == 'status_video') {
-            if (!req.status) {
-                $('.nsc-panel.nsc-panel-compact').remove();
-                $('.nsc-video-editor').remove();
-                $(window).off('keydown', panelKeyDown);
-                chrome.runtime.onMessage.removeListener(arguments.callee);
-                intervalClear && clearInterval(intervalClear)
-            } else if (req.state == 'recording') {
-                $button_play.hide();
-                $button_pause.show();
-            } else {
-                $button_pause.hide();
-                $button_play.show();
-            }
-        }
-        if (req.operation == 'is_set_file') {
-            sendResponse(true)
-        }
     });
 
-    $button_play.on('click', function () {
-        chrome.extension.sendMessage({operation: 'status_video_change', status: 'play'});
-    });
-    $button_pause.on('click', function () {
-        chrome.extension.sendMessage({operation: 'status_video_change', status: 'pause'});
-    });
-    $button_stop.on('click', function () {
-        chrome.extension.sendMessage({operation: 'status_video_change', status: 'stop'});
-    });
-
-    if (deawingTools && localStorage.videoEditorTools != undefined) {
-        videoEditor && videoEditor.trigger('nimbus-editor-active-tools', localStorage.videoEditorTools);
-    }
-
-    if (deawingTools) {
-        $('.nsc-panel.nsc-panel-compact').show();
-    } else {
-        $('.nsc-panel.nsc-panel-compact').hide();
-    }
-
-    if (deleteDrawing) {
-        intervalClear = setInterval(function () {
-            videoEditor.trigger('nimbus-editor-active-tools', 'clearAll');
-        }, deleteDrawing * 1000)
-    }
-
-});
+})();

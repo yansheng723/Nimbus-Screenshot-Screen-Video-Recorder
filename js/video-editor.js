@@ -14,12 +14,34 @@ var editor = {
         arrow: '#FF0000',
         square: '#0000FF'
     },
-    currentTools: 'cursorDefault',
+    currentTools: 'arrow',
+    history: {
+        memory: [],
+        save: function () {
+            editor.history.memory.push(Object.assign({}, {
+                date: Date.now(),
+                data: editor.canvas.current.ctx.getImageData(0, 0, editor.canvas.common.width, editor.canvas.common.height),
+                tools: editor.currentTools
+            }));
+        },
+        remove: function (index) {
+            editor.history.memory.splice(index, 1);
+        },
+        draw: function () {
+            editor.canvas.background.ctx.clearRect(0, 0, editor.canvas.common.width, editor.canvas.common.height);
+            for (var i = 0, len = editor.history.memory.length; i < len; i++) {
+                var item_history = editor.history.memory[i];
+                editor.canvas.current.ctx.putImageData(item_history.data, 0, 0);
+                editor.canvas.background.ctx.drawImage(editor.canvas.current.canvas[0], 0, 0);
+                editor.canvas.current.ctx.clearRect(0, 0, editor.canvas.common.width, editor.canvas.common.height);
+            }
+        }
+    },
     initialize: function (container) {
         editor.canvas.common.width = $(container).width();
         editor.canvas.common.height = $(container).height();
         editor.canvas.common.container = $(container);
-        editor.canvas.common.container = $(editor.canvas.common.container);
+        // editor.canvas.common.container = $(editor.canvas.common.container);
 
         editor.canvas.background.canvas = $(document.createElement('canvas'))
             .attr('width', editor.canvas.common.width)
@@ -46,7 +68,7 @@ var editor = {
         editor.canvas.common.container.addClass('events');
 
         $('html body')
-        // .css({/*cursor: 'url( ' + chrome.extension.getURL('images/video/ic-cursor.svg') + ') 0 0, pointer', */'user-select': 'none'})
+        // .css({/*cursor: 'url( ' + chrome.runtime.getURL('images/video/ic-cursor.svg') + ') 0 0, pointer', */'user-select': 'none'})
             .on('mousedown', function (e) {
                 if (!$(e.target).closest('.nsc-panel.nsc-panel-compact').length) editor.draw.start(e);
             })
@@ -58,15 +80,17 @@ var editor = {
             });
 
         editor.canvas.common.container.on('nimbus-editor-active-tools', function (e, tool) {
-            if (editor.draw[tool] != undefined && tool != 'clearAll') {
-                if (tool == 'cursorDefault' || tool == 'cursorShadow' || tool == 'cursorRing') {
+            if (editor.draw[tool] !== undefined && tool !== 'clearAll') {
+                if (tool === 'cursorDefault' || tool === 'cursorShadow' || tool === 'cursorRing') {
                     $('html body').css({'user-select': 'auto'});
                     editor.canvas.common.container.addClass('events')
                 } else {
                     $('html body').css({'user-select': 'none'});
                     editor.canvas.common.container.removeClass('events')
                 }
-                if (tool == 'cursorShadow') {
+                if (tool === 'cursorNone') {
+                    $('html body').css({cursor: 'none'});
+                } else if (tool === 'cursorShadow') {
                     $('html body').css({cursor: 'none'});
                     editor.draw.cursorShadow(editor.draw.startPoint, editor.getPosition(e));
                 } else {
@@ -76,9 +100,12 @@ var editor = {
                 editor.currentTools = tool;
                 container.trigger('nimbus-editor-change', [editor.currentTools, editor.colorTools[editor.currentTools]]);
                 editor.canvas.current.ctx.clearRect(0, 0, editor.canvas.common.width, editor.canvas.common.height);
-                // $('html body').css({cursor: 'url( ' + chrome.extension.getURL('images/video/ic-cursor.svg') + ') 0 0, pointer'});
-            } else if (tool == 'clearAll') {
+                // $('html body').css({cursor: 'url( ' + chrome.runtime.getURL('images/video/ic-cursor.svg') + ') 0 0, pointer'});
+            } else if (tool === 'clearAll') {
                 editor.draw.clearAll();
+            } else if (!tool) {
+                editor.currentTools = false;
+                console.error('Tool clear!')
             } else {
                 console.error('Tool not found!')
             }
@@ -91,6 +118,11 @@ var editor = {
             } else {
                 console.error('Can not set color!')
             }
+        });
+
+        editor.canvas.common.container.on('nimbus-editor-remove-old', function (e) {
+            editor.history.remove(0);
+            editor.history.draw();
         });
 
         return container;
@@ -115,24 +147,14 @@ var editor = {
                 case 'notifBlue':
                     editor.draw[editor.currentTools](editor.draw.startPoint, editor.getPosition(e));
                     break;
-                case 'cursorDefault':
-                case 'cursorShadow':
-                case 'pen':
-                case 'square':
-                    break;
             }
         },
         move: function (e) {
-            if (editor.isDraw) {
+            if (editor.isDraw && editor.currentTools) {
                 editor.draw[editor.currentTools](editor.draw.startPoint, editor.getPosition(e));
             }
 
             switch (editor.currentTools) {
-                case 'cursorDefault':
-                case 'cursorRing':
-                case 'pen':
-                case 'square':
-                    break;
                 case 'cursorShadow':
                     editor.draw[editor.currentTools](editor.draw.startPoint, editor.getPosition(e));
                     break;
@@ -142,15 +164,13 @@ var editor = {
             editor.isDraw = false;
             editor.draw.startPoint = {};
             switch (editor.currentTools) {
-                case 'cursorDefault':
-                case 'cursorRing':
-                    break;
                 case 'pen':
                 case 'square':
                 case 'arrow':
                 case 'notifGreen':
                 case 'notifRed':
                 case 'notifBlue':
+                    editor.history.save();
                     editor.canvas.background.ctx.drawImage(editor.canvas.current.canvas[0], 0, 0);
                     editor.canvas.current.ctx.clearRect(0, 0, editor.canvas.common.width, editor.canvas.common.height);
                     break;
@@ -163,6 +183,9 @@ var editor = {
             //     editor.canvas.current.ctx.clearRect(0, 0, editor.canvas.common.width, editor.canvas.common.height);
             //     editor.canvas.current.ctx.drawImage(image, end.x, end.y);
             // };
+        },
+        cursorNone: function (start, end) {
+
         },
         cursorRing: function (start, end) {
             var ringCounter = 0, ringRadius;
@@ -226,7 +249,8 @@ var editor = {
         notif: function (start, end, name) {
             var image = new Image();
             var ratio = 2;
-            image.src = chrome.extension.getURL('images/video/notif_' + name + '.svg');
+            image.src = chrome.runtime.getURL('images/video/notif_' + name + '.svg');
+            image.crossOrigin = "Anonymous";
             image.onload = function () {
                 editor.canvas.current.ctx.clearRect(0, 0, editor.canvas.common.width, editor.canvas.common.height);
                 editor.canvas.current.ctx.drawImage(

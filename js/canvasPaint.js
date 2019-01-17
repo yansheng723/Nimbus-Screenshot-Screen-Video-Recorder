@@ -81,7 +81,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
             moved: false,
             lasttools: TOOLS.ARROW,
             tool: TOOLS.ARROW,
-            lineThickness: 10,
+            strokeSize: 10,
             strokeColor: "#FF0000",
             fillColor: "#FF0000",
             sprayDensity: 5,
@@ -108,7 +108,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
         var copyObject = {};
         var currentN = -1;
         var timer = {};
-        var enablenumbers = false;
+        var enableNumbers = false;
         var maxNumber = 0;
 
         var cloneObject = function (obj) {
@@ -374,10 +374,12 @@ CanvasRenderingContext2D.prototype.clear = function () {
 
         function setFontProperty(size, family) {
             if (size) {
+                localStorage.setItem('fontSize', size);
                 $('#nsc_redactor_font_size').val(size).trigger('js-change');
             }
 
             if (family) {
+                localStorage.setItem('fontFamily', family);
                 $('#nsc_redactor_font_family').val(family).trigger('js-change');
             }
         }
@@ -391,7 +393,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 return;
             }
             if (typeof param === 'object') {
-                param = (param.type == "sticker") || (param.type == "textarrow") || (param.type == "text");
+                param = (param.type === "sticker") || (param.type === "textarrow") || (param.type === "text");
             }
             if (typeof param === 'boolean') {
                 if (param) {
@@ -433,7 +435,6 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 this.setDefaultValue();
             },
             setDrawOptions: function () {
-
                 if (this.shadow.enable) {
                     this.context.shadowColor = this.shadow.color;
                     this.context.shadowBlur = this.shadow.blur;
@@ -488,13 +489,13 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 }
             },
             removeNumber: function () {
-                if (enablenumbers && this.context && this.getNumberPosition()) {
+                if (enableNumbers && this.context && this.getNumberPosition()) {
                     var p = this.getNumberPosition();
                     this.context.clearRect(p.x - 20, p.y - 20, 40, 40);
                 }
             },
             drawNumber: function () {
-                if (enablenumbers && this.getNumberPosition()) {
+                if (enableNumbers && this.getNumberPosition() && !(this.type === 'img' && this.watermark)) {
                     var x = this.getNumberPosition().x;
                     var y = this.getNumberPosition().y;
 
@@ -510,7 +511,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 }
             },
             checkNumber: function (x, y) {
-                if (!enablenumbers && !this.getNumberPosition()) return false;
+                if (!enableNumbers && !this.getNumberPosition()) return false;
                 var tx = this.getNumberPosition().x;
                 var ty = this.getNumberPosition().y;
                 var point = (tx - x) * (tx - x) + (ty - y) * (ty - y);
@@ -548,7 +549,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
         var number = function () {
             return {
                 active: false,
-                n: 99,
+                n: 0,
                 x: 0,
                 y: 0,
                 xl: 0,
@@ -1338,8 +1339,8 @@ CanvasRenderingContext2D.prototype.clear = function () {
 
                 var p = this.getMarkPoints();
                 return (x >= x1 && x <= x2 && y >= y1 && y <= this.y - 30) || (
-                        x >= p.x - ((this.arrow === 2) ? 0 : 30) && x <= p.x + ((this.arrow === 4) ? 0 : 30) && y >= p.y - ((this.arrow === 3) ? 0 : 30) && y <= p.y + ((this.arrow === 1) ? 0 : 30)
-                    );
+                    x >= p.x - ((this.arrow === 2) ? 0 : 30) && x <= p.x + ((this.arrow === 4) ? 0 : 30) && y >= p.y - ((this.arrow === 3) ? 0 : 30) && y <= p.y + ((this.arrow === 1) ? 0 : 30)
+                );
             };
             this.move = function (dx, dy) {
                 switch (this.marker) {
@@ -1480,18 +1481,10 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 this.setDrawOptions();
 
                 ctx.textBaseline = "top";
-                ctx.font = this.size + 'px ' + this.family;
+                ctx.font = 'bold ' + this.size + 'px ' + this.family;
                 ctx.textAlign = "start";
 
-//                if (this.current && this.marker > -1) {
-//                    var s = lineH(ctx, this.text, this.w, this.h, 0, 0, this.size);
-//                    if(Math.abs(this.size-s)>3){
-//                        this.size = s;
-//                        ctx.font = this.size + 'px Arial';
-//                    }
-//                }
                 wrapText(ctx, this.text, 10, 10, this.w, 0, 0, this.size);
-
                 this.context = saveCtx;
                 this.context.save();
                 this.context.shadowColor = 'transparent';
@@ -1551,7 +1544,8 @@ CanvasRenderingContext2D.prototype.clear = function () {
                     'left': this.x,
                     'color': this.color,
                     'font-size': this.size + 'px',
-                    'font-family': this.family
+                    'font-family': this.family,
+                    'font-weight': 'bold'
                 });
                 textarea.focus();
             };
@@ -2118,6 +2112,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
             this.show = true;
             this.index = -1;
             this.type = 'img';
+            this.watermark = false;
             this.store = [];
             this.number = number();
             this.saveStore = function () {
@@ -2140,7 +2135,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 }
             };
             this.draw = function (context) {
-                if (!this.show)return;
+                if (!this.show) return;
                 this.context = context;
                 this.context.beginPath();
 
@@ -2299,7 +2294,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 }
             };
             this.draw = function (context) {
-                if (!this.show)return;
+                if (!this.show) return;
                 this.context = context;
                 this.context.beginPath();
                 this.context.shadowColor = 'transparent';
@@ -2382,7 +2377,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
             if (currentN >= 0 && state.tool === TOOLS.EDIT) {
                 objects[currentN].checkMarkers(state.startDrawX, state.startDrawY);
                 setColorProperty(state.strokeColor);
-                setWidthProperty(state.lineThickness);
+                setWidthProperty(state.strokeSize);
                 setFillColorProperty(state.fillColor);
                 setFontProperty(state.fontSize, state.fontFamily);
                 if (objects[currentN].marker >= 0) {
@@ -2420,13 +2415,9 @@ CanvasRenderingContext2D.prototype.clear = function () {
                     state.drawing = false;
                     return;
                 }
-
-                // if(state.tool === TOOLS.BLUR_OTHER) {
-                //     state.created = true;
-                // }
             }
 
-            canvas.current.context.lineWidth = state.lineThickness;
+            canvas.current.context.lineWidth = state.strokeSize;
 
             points.push([state.startDrawX, state.startDrawY]);
 
@@ -2479,7 +2470,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                     currentObject.type = 'line_curve';
                     break;
                 case TOOLS.HIGHLIGHT:
-                    canvas.current.context.lineWidth = LS.setting.width * 4;
+                    canvas.current.context.lineWidth = state.strokeSize * 4;
                     canvas.current.context.fillStyle = 'rgba(255, 255, 0, 0.5)';
                     canvas.current.context.strokeStyle = 'rgba(255, 255, 0, 0.5)';
                 case TOOLS.PEN:
@@ -2490,7 +2481,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                     ];
                     canvas.current.context.shadowColor = 'transparent';
                     canvas.current.context.beginPath();
-                    canvas.current.context.arc(state.startDrawX, state.startDrawY, state.lineThickness / 2, 0, 2 * Math.PI, false);
+                    canvas.current.context.arc(state.startDrawX, state.startDrawY, state.strokeSize / 2, 0, 2 * Math.PI, false);
                     canvas.current.context.fill();
                     state.created = true;
                     break;
@@ -2514,7 +2505,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                     if (textarea) {
                         textarea.blur();
                     } else {
-                        currentObject.setValue(state.startDrawX - 4, state.startDrawY - state.fontSize / 2, state.lineThickness, state.strokeColor);
+                        currentObject.setValue(state.startDrawX - 4, state.startDrawY - state.fontSize / 2, state.strokeSize, state.strokeColor);
                         currentObject.size = state.fontSize;
                         currentObject.family = state.fontFamily;
                         currentObject.h = state.fontSize * 2 + 4;
@@ -2540,7 +2531,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                     currentObject.x = state.startDrawX;
                     currentObject.y = state.startDrawY;
                     for (var i = 0, l = objects.length; i < l; i++) {
-                        if (objects[i].type == 'number' && objects[i].show) {
+                        if (objects[i].type === 'number' && objects[i].show) {
                             currentObject.number += 1;
                         }
                     }
@@ -2548,8 +2539,6 @@ CanvasRenderingContext2D.prototype.clear = function () {
                     state.created = true;
                     break;
                 case TOOLS.BLUR:
-                    _this.mergeBg();
-                    History.undoAll();
                     currentObject = new ObNoEdit();
                     currentObject.type = 'blur';
                     state.created = true;
@@ -2576,7 +2565,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 if (state.tool !== TOOLS.STICKER && state.tool !== TOOLS.TEXT_ARROW && state.tool !== TOOLS.NUMBER) {
                     currentObject.number.n = getNumber();
                 }
-                currentObject.setValue(state.startDrawX, state.startDrawY, state.lineThickness, state.strokeColor);
+                currentObject.setValue(state.startDrawX, state.startDrawY, state.strokeSize, state.strokeColor);
                 currentObject.fillColor = state.fillColor;
             }
             currentObject.shadow = $.extend({}, state.shadow);
@@ -2586,7 +2575,6 @@ CanvasRenderingContext2D.prototype.clear = function () {
         };
 
         var draw = function (event) {
-
             var x = Math.floor((event.pageX - $(canvas.current.canvas).offset().left) / kzoom);
             var y = Math.floor((event.pageY - $(canvas.current.canvas).offset().top) / kzoom);
 
@@ -2624,9 +2612,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 }
 
                 switch (state.tool) {
-
                     case TOOLS.EMPTY_CIRCLE:
-
                         currentObject.remove(canvas.current.context);
 
                         var xdiff = x - state.startDrawX;
@@ -2636,13 +2622,10 @@ CanvasRenderingContext2D.prototype.clear = function () {
                         currentObject.R = r;
                         currentObject.RLast = r;
                         currentObject.draw(canvas.current.context);
-
                         break;
-
                     case TOOLS.EMPTY_RECTANGLE:
                     case TOOLS.ROUNDED_RECTANGLE:
                     case TOOLS.ELLIPSE:
-
                         currentObject.remove(canvas.current.context);
 
                         var w = x - state.startDrawX;
@@ -2659,13 +2642,10 @@ CanvasRenderingContext2D.prototype.clear = function () {
                         currentObject.wLast = w;
                         currentObject.hLast = h;
                         currentObject.draw(canvas.current.context);
-
                         break;
-
                     case TOOLS.ARROW:
                     case TOOLS.ARROW_DOUBLE:
                     case TOOLS.LINE:
-
                         currentObject.remove(canvas.current.context);
                         canvas.current.context.lineCap = "butt";
 
@@ -2681,34 +2661,24 @@ CanvasRenderingContext2D.prototype.clear = function () {
                         currentObject.x2Last = x;
                         currentObject.y2Last = y;
                         currentObject.draw(canvas.current.context);
-
                         break;
-
                     case TOOLS.HIGHLIGHT:
                     case TOOLS.PEN:
-
                         canvas.current.context.lineCap = "round";
 
                         var onPaint = function () {
-
-                            // Saving all the points in an array
                             points.push({x: x, y: y});
 
                             if (points.length < 3) {
                                 var b = points[0];
                                 canvas.current.context.beginPath();
-                                //ctx.moveTo(b.x, b.y);
-                                //ctx.lineTo(b.x+50, b.y+50);
                                 canvas.current.context.arc(b.x, b.y, canvas.current.context.lineWidth / 2, 0, Math.PI * 2, !0);
                                 canvas.current.context.fill();
                                 canvas.current.context.closePath();
-
                                 return;
                             }
 
-                            // Tmp canvas is always cleared up before drawing.
                             currentObject.remove(canvas.current.context);
-
                             canvas.current.context.beginPath();
                             canvas.current.context.moveTo(points[0].x, points[0].y);
 
@@ -2719,7 +2689,6 @@ CanvasRenderingContext2D.prototype.clear = function () {
                                 canvas.current.context.quadraticCurveTo(points[i].x, points[i].y, c, d);
                             }
 
-                            // For the last 2 points
                             canvas.current.context.quadraticCurveTo(
                                 points[i].x,
                                 points[i].y,
@@ -2743,7 +2712,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                             currentObject.remove(canvas.current.context);
                             canvas.current.context.beginPath();
                             if (state.tool === TOOLS.LINE_DOTTED) {
-                                canvas.current.context.setLineDash([0.001, state.lineThickness * 2]);
+                                canvas.current.context.setLineDash([0.001, state.strokeSize * 2]);
                             }
                             canvas.current.context.moveTo(state.startDrawX, state.startDrawY);
 
@@ -2756,27 +2725,20 @@ CanvasRenderingContext2D.prototype.clear = function () {
                             if (l > 5 && state.tool === TOOLS.ARROW_CURVE) {
                                 var x1 = (points[l - 6][0] + x) / 2;
                                 var y1 = (points[l - 6][1] + y) / 2;
-                                drawArrow((points[l - 3][0] + x1) / 2, (points[l - 3][1] + y1) / 2, x, y, canvas.current.context, state.lineThickness);
+                                drawArrow((points[l - 3][0] + x1) / 2, (points[l - 3][1] + y1) / 2, x, y, canvas.current.context, state.strokeSize);
                             }
-
                             canvas.current.context.stroke();
                         }
-
                         break;
-
                     case TOOLS.ERASER:
-
                         canvas.background.context.beginPath();
-                        canvas.background.context.arc(x, y, state.lineThickness * 2, 0, 2 * Math.PI, false);
+                        canvas.background.context.arc(x, y, state.strokeSize * 2, 0, 2 * Math.PI, false);
                         canvas.background.context.clear();
                         break;
-
                     case TOOLS.BLUR:
-
                         canvas.current.context.shadowColor = 'transparent';
                         canvas.current.context.clearRect(0, 0, canvas.common.width, canvas.common.height);
                         blurImage(state.startDrawX, state.startDrawY, x, y);
-
                         break;
 
                     case TOOLS.BLUR_OTHER:
@@ -2788,7 +2750,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                     case TOOLS.TEXT:
 //                        canvas.current.context.clearRect(0, 0, canvas.common.width, canvas.common.height);
 //                        currentObject.x = x - 4;
-//                        currentObject.y = y - (state.lineThickness * 5) / 2;
+//                        currentObject.y = y - (state.strokeSize * 5) / 2;
 //                        currentObject.xLast = currentObject.x;
 //                        currentObject.yLast = currentObject.y;
 //                        currentObject.draw(canvas.current.context);
@@ -2848,7 +2810,6 @@ CanvasRenderingContext2D.prototype.clear = function () {
         };
 
         var drawCursor = function (event) {
-
             if (!state.drawing) {
 
                 var x = Math.floor((event.pageX - $(canvas.current.canvas).offset().left) / kzoom);
@@ -2936,7 +2897,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
         };
 
         var scrollPage = function (event) {
-            var clientY = event.clientY,
+            let clientY = event.clientY,
                 clientX = event.clientX,
                 restY = window.innerHeight - clientY,
                 restX = window.innerWidth - clientX,
@@ -2963,7 +2924,6 @@ CanvasRenderingContext2D.prototype.clear = function () {
             if (canvas.cache.action === 'undo') {
                 canvas.cache = {};
             }
-
         };
 
         var saveHistory = function () {
@@ -2971,13 +2931,10 @@ CanvasRenderingContext2D.prototype.clear = function () {
             History.max = History.index;
             History.setButton();
 
-//            resetHistory();
-
             var l, n = objects.length;
             for (l = 0; l < n; l++) {
                 objects[l].saveStore && objects[l].saveStore();
             }
-
         };
 
         var checkObject = function (x, y) {
@@ -2989,11 +2946,8 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 objects[l].current = false;
             }
             for (l = n; l >= 0; l--) {
-                if (objects[l].checkNumber(x, y)
-                    || objects[l].includesPoint(x, y)) {
-                    if (state.lock && n != l) {
-                        break;
-                    }
+                if (objects[l].checkNumber(x, y) || objects[l].includesPoint(x, y)) {
+                    if (state.lock && n !== l) break;
                     objects[l].current = true;
                     currentN = l;
                     objects[l].setCursor(x, y);
@@ -3006,7 +2960,6 @@ CanvasRenderingContext2D.prototype.clear = function () {
         var setEditTools = function () {
             if (state.tool !== TOOLS.EDIT) state.lasttools = state.tool;
             state.tool = TOOLS.EDIT;
-
 
             if (currentN >= 0) {
                 showFontSettings(objects[currentN])
@@ -3049,7 +3002,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 var x = startX - endX;
                 var y = startY - endY;
                 var hypotenuse = Math.sqrt(x * x + y * y);
-                hypotenuse = (hypotenuse == 0 ? arrowHeight : hypotenuse) / 2;
+                hypotenuse = (hypotenuse === 0 ? arrowHeight : hypotenuse) / 2;
                 var dx = x / hypotenuse * arrowHeight;
                 var dy = y / hypotenuse * arrowHeight;
                 return {x: endX + dx, y: endY + dy};
@@ -3059,7 +3012,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 var x = p1.x - startX;
                 var y = p1.y - startY;
                 var hypotenuse = Math.sqrt(x * x + y * y);
-                hypotenuse = (hypotenuse == 0 ? arrowHeight : hypotenuse) / 2;
+                hypotenuse = (hypotenuse === 0 ? arrowHeight : hypotenuse) / 2;
                 var dx = (y / hypotenuse * arrowWidth) * direct;
                 var dy = (x / hypotenuse * arrowWidth) * direct;
                 return {x: p1.x + dx, y: p1.y - dy}
@@ -3099,45 +3052,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
             context.lineCap = 'butt';
         };
 
-//        var lineH = function(context, text, maxWidth, maxHeight, marginLeft, marginTop, lineHeight) {
-//            context.font = lineHeight + 'px Arial';
-//            var lines = text.replace('\r', '').split('\n');
-//            var countWords = lines.length;
-//            var max = 0;
-//
-//            for (var i = 0; i < countWords; i++) {
-//
-//                var word = lines[i].split(/\s+/g);
-//                var countWord = word.length;
-//                var line = "";
-//                for (var n = 0; n < countWord; n++) {
-//                    var m = context.measureText(word[n]).width;
-//                    if (m > max) max = m;
-//                    var testLine = line + word[n] + " ";
-//                    var testWidth = context.measureText(testLine).width;
-//                    if (testWidth > maxWidth && n !== 0) {
-//                        marginTop += lineHeight;
-//                    } else {
-//                        line = testLine;
-//                    }
-//                }
-//                marginTop += lineHeight;
-//            }
-//
-//            if (max > maxWidth) {
-//                return lineHeight - 5;
-//            } else if (marginTop > maxHeight) {
-//                return lineHeight - 10;
-//            } else if (marginTop * 1.5 < maxHeight) {
-//                return lineHeight + 10;
-//            }
-//
-//            return lineHeight;
-//
-//        };
-
         var wrapText = function (context, text, x, y, maxWidth, marginLeft, marginTop, lineHeight) {
-
             var lines = text.replace('\r', '').split('\n');
 
             var countWords = lines.length;
@@ -3168,7 +3083,6 @@ CanvasRenderingContext2D.prototype.clear = function () {
                     }
                 }
                 context.fillText(line, x + marginLeft, y + marginTop);
-
                 marginTop += +lineHeight;
             }
 
@@ -3198,7 +3112,6 @@ CanvasRenderingContext2D.prototype.clear = function () {
             var y = startY < endY ? startY : endY;
             var width = Math.abs(endX - startX);
             var height = Math.abs(endY - startY);
-            // canvas.current.context.putImageData(blur, 0, 0);
 
             if (width > 0 && height > 0) {
                 canvas.current.context.drawImage(canvas.fon.canvas, x, y, width, height, x, y, width, height);
@@ -3217,7 +3130,6 @@ CanvasRenderingContext2D.prototype.clear = function () {
             for (n = 0; n < rounds; n++) {
                 for (var m = 0; m < 2; m++) {
                     if (m) {
-
                         outer = w;
                         inner = h;
                         step = w * 4;
@@ -3256,13 +3168,25 @@ CanvasRenderingContext2D.prototype.clear = function () {
             return img;
         };
 
-        var nativeSupport = function () {
-            var el = document.createElement('canvas');
-            return el.getContext != undefined;
+        var grayscale = function (canvas) {
+            if (localStorage.depthScreenshot === undefined || localStorage.depthScreenshot === '1') return;
+            var depth = +localStorage.depthScreenshot;
+            var imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+            var pixels = imageData.data;
+            var numPixels = pixels.length;
+
+            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+
+            for (var i = 0; i < numPixels; i++) {
+                pixels[i * 4] = pixels[i * 4] - (pixels[i * 4] % depth);
+                pixels[i * 4 + 1] = pixels[i * 4 + 1] - (pixels[i * 4 + 1] % depth);
+                pixels[i * 4 + 2] = pixels[i * 4 + 2] - (pixels[i * 4 + 2] % depth);
+            }
+
+            canvas.getContext('2d').putImageData(imageData, 0, 0);
         };
 
         this.initialize = function (options) {
-
             settings = $.extend({}, defaults, options);
 
             $(this).css("position", "relative");
@@ -3284,7 +3208,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
             $(this).append(canvas.background.canvas);
             $(this).append(canvas.current.canvas);
 
-            if (typeof FlashCanvas != "undefined") {
+            if (typeof FlashCanvas !== "undefined") {
                 FlashCanvas.initElement(canvas.background.canvas);
                 FlashCanvas.initElement(canvas.current.canvas);
             }
@@ -3303,7 +3227,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
         this.getTools = function () {
             var key;
             for (key in TOOLS) {
-                if (TOOLS[key] == state.tool) {
+                if (TOOLS[key] === state.tool) {
                     break;
                 }
             }
@@ -3385,24 +3309,27 @@ CanvasRenderingContext2D.prototype.clear = function () {
             showFontSettings(false);
         };
         this.activateBlur = function () {
-            state.tool = TOOLS.BLUR;
-            showFontSettings(false);
-        };
-        this.activateBlurOther = function () {
-            state.tool = TOOLS.BLUR_OTHER;
             _this.mergeBg();
             History.undoAll();
             saveHistory();
-            // $('body').addClass("wait");
-            // setTimeout(function () {
+            showFontSettings(false);
+            state.tool = TOOLS.BLUR;
+            state.drawing = true;
+            state.created = true;
+        };
+        this.activateBlurOther = function () {
+            _this.mergeBg();
+            History.undoAll();
+            saveHistory();
+            showFontSettings(false);
             blurAll();
-            //     $('body').removeClass("wait");
             currentObject = new ObNoEdit();
+            state.tool = TOOLS.BLUR_OTHER;
             state.drawing = true;
             state.created = true;
             drawEnd(null);
-            // }, 200);
-            showFontSettings(false);
+            state.drawing = true;
+            state.created = true;
         };
         this.sticker = function () {
             state.tool = TOOLS.STICKER;
@@ -3414,7 +3341,6 @@ CanvasRenderingContext2D.prototype.clear = function () {
         };
         this.textArrow = function () {
             state.tool = TOOLS.TEXT_ARROW;
-
             showFontSettings(true);
         };
         this.activeteNumber = function () {
@@ -3423,11 +3349,11 @@ CanvasRenderingContext2D.prototype.clear = function () {
         };
 
         this.loadBackgroundImage = function (imgUrl, cb) {
-            var pic = new Image();
-            pic.onload = function () {
-                var z = 1;//window.devicePixelRatio || 1;
-                var h = pic.height / z;
-                var w = pic.width / z;
+            let background = new Image();
+            background.onload = function () {
+
+                let h = background.height;
+                let w = background.width;
 
                 $(_this).width(w).height(h);
 
@@ -3441,40 +3367,49 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 $(canvas.background.canvas).attr("width", w);
                 $(canvas.background.canvas).attr("height", h);
 
-                // canvas.fon.context.drawImage(pic, 0, 0, w, h);
-                canvas.fon.context.drawImage(pic, 0, 0, w * z, h * z, 0, 0, w, h);
+                canvas.fon.context.fillStyle = "white";
+                canvas.fon.context.fillRect(0, 0, w, h);
+                canvas.fon.context.drawImage(background, 0, 0, w, h);
+                grayscale(canvas.fon.canvas);
 
-                _this.zoom(true);
+                _this.autoZoom();
                 cb && cb();
-
             };
-            pic.src = imgUrl;
+            background.src = imgUrl;
         };
 
-        this.loadImageObject = function (data, xp, yp) {
-            var x = (xp && Math.floor((xp - $(canvas.current.canvas).offset().left) / kzoom)) || 1;
-            var y = (yp && Math.floor((yp - $(canvas.current.canvas).offset().top) / kzoom)) || 1;
-
-            var pic = new Image();
+        this.loadImageObject = function (dataURL, data, cb) {
+            let pic = new Image();
             pic.onload = function () {
+                let c = document.createElement('canvas');
+                let ctx = c.getContext('2d');
 
-                var canvas = document.createElement('canvas');
-                canvas.width = pic.width;
-                canvas.height = pic.height;
-                var context = canvas.getContext('2d');
-                context.drawImage(pic, 0, 0);
+                c.width = data.width || pic.width;
+                c.height = data.height || pic.height;
+                ctx.drawImage(pic, 0, 0, c.width, c.height);
                 currentObject = new ObImage();
-                currentObject.x = currentObject.xLast = x;
-                currentObject.y = currentObject.yLast = y;
-                currentObject.w = currentObject.wLast = pic.width;
-                currentObject.h = currentObject.hLast = pic.height;
-                currentObject.number.n = getNumber();
-                currentObject.data = context.getImageData(0, 0, pic.width, pic.height);
-                state.drawing = true;
-                state.created = true;
-                drawEnd(null);
+                currentObject.x = currentObject.xLast = data.x || 1;
+                currentObject.y = currentObject.yLast = data.y || 1;
+                currentObject.w = currentObject.wLast = c.width;
+                currentObject.h = currentObject.hLast = c.height;
+                currentObject.watermark = data.watermark || false;
+                currentObject.current = false;
+                currentObject.data = ctx.getImageData(0, 0, c.width, c.height);
+                objects.push(currentObject);
+                drawAll();
+
+                cb && cb()
             };
-            pic.src = data;
+
+            pic.src = dataURL;
+        };
+
+        this.setWaterMark = function (dataURL, data, cb) {
+            for (let i = objects.length - 1; i >= 0; --i) {
+                if (objects[i].type === 'img' && objects[i].watermark) objects.splice(i, 1);
+            }
+
+            if (arguments.length >= 2) this.loadImageObject(dataURL, Object.assign(data, {watermark: true}), cb)
         };
 
         this.undo = function () {
@@ -3509,11 +3444,8 @@ CanvasRenderingContext2D.prototype.clear = function () {
         };
 
         this.changeSize = function (width, height) {
-
             if (width !== canvas.common.width || height !== canvas.common.height) {
-
                 this.mergeBg();
-
                 History.saveToCache();
 
                 var pic = new Image();
@@ -3528,24 +3460,15 @@ CanvasRenderingContext2D.prototype.clear = function () {
         };
 
         this.cropImage = function (size) {
-
             var w = Math.round(size.w / kzoom), h = Math.round(size.h / kzoom), x = Math.round(size.x / kzoom), y = Math.round(size.y / kzoom);
 
             if ((x + w) > canvas.common.width) w = canvas.common.width - x;
             if ((y + h) > canvas.common.height) h = canvas.common.height - y;
 
-//            for (var i = 0, l = objects.length; i < l; i++) {
-//                objects[i].move(-x, -y);
-//                objects[i].moveEnd();
-//            }
             this.mergeBg();
-
             History.saveToCache();
-
             var fonData = canvas.fon.context.getImageData(x, y, w, h);
-
             this.resizeElements(w, h);
-
             canvas.fon.context.putImageData(fonData, 0, 0);
             History.undoAll();
             saveHistory();
@@ -3556,9 +3479,8 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 objects[currentN].fillColor = color;
                 drawAll();
             }
+            this.setFillColor(color);
             state.fillColor = color;
-            LS.fillColor = color;
-            localStorage.setItem('fillColor', color);
         };
 
         this.changeStrokeColor = function (color) {
@@ -3572,15 +3494,11 @@ CanvasRenderingContext2D.prototype.clear = function () {
 
         this.changeStrokeSize = function (size) {
             if (currentN > -1) {
-                //if (objects[currentN].type === 'text') {
-                //    objects[currentN].size = size * 5;
-                //} else {
                 objects[currentN].width = +size;
-                //}
                 drawAll();
             }
             this.setToolsWigth(size);
-            state.lineThickness = +size
+            state.strokeSize = +size
         };
 
         this.changeShadow = function (shadow) {
@@ -3589,6 +3507,7 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 drawAll();
             }
             this.setShadow(shadow);
+            state.shadow = shadow;
         };
 
         this.changeSprayDensity = function (density) {
@@ -3599,41 +3518,43 @@ CanvasRenderingContext2D.prototype.clear = function () {
             return canvas.background.canvas.toDataURL("image/png");
         };
 
+        this.getCanvas = function () {
+            return canvas
+        };
+
         this.getZoom = function () {
             return kzoom;
         };
 
         this.zoom = function (k) {
-            if (k === true) {
-                k = kzoom;
-            }
+            if (k === true) k = kzoom;
             this.css('-webkit-transform', 'scale(' + k + ')');
             kzoom = k;
 
-            $('#nsc_canvas_wrap').width(Math.max($(window).width(), $(this).width() * k));
+            if ($(window).width() < $(this).width() * k) $('#nsc_canvas_scroll').width($(this).width() * k);
+            else $('#nsc_canvas_scroll').width('auto');
 
-            var marginH = Math.round(-0.5 * (1 - k) * $(this).height());
-            var marginW = Math.round(-0.5 * (1 - k) * $(this).width());
+            let marginH = Math.round(-0.5 * (1 - k) * $(this).height());
+            let marginW = Math.round(-0.5 * (1 - k) * $(this).width());
 
-            var b = ($('body').width() - k * $(this).width()) / 2;
-            if (b < 0) {
-                b = 0
-            }
+            let b = ($('body').width() - k * $(this).width()) / 2;
+            if (b < 0) b = 0;
             this.css('margin-left', b + marginW + 'px');
             this.css('margin-top', marginH + 'px');
             this.css('margin-bottom', marginH + 'px');
         };
 
         this.autoZoom = function () {
-            var d = canvas.common.width / $(window).width();
-            var z = 1;
-            if (d > 0.99) {
-                z = 0.75;
-                if (d > 1.99) z = 0.5;
-                if (d > 2.99) z = 0.25;
-                $("#nsc_zoom_percent").val(z).trigger('change');
-                _this.zoom(z);
-            }
+            let d = canvas.common.width / $(window).width();
+            let z = 1;
+
+            if (d > 0.99) z = 0.75;
+            if (d > 1.33) z = 0.5;
+            if (d > 2) z = 0.25;
+
+            $("#nsc_zoom_percent").val(z).trigger('change').trigger('change_js');
+
+            _this.zoom(z);
         };
 
         this.clearAll = function () {
@@ -3663,11 +3584,6 @@ CanvasRenderingContext2D.prototype.clear = function () {
             drawAll();
         };
         this.delete = function (e) {
-            // if (currentObject.x !== undefined) {
-            //     History.max--;
-            //     History.undo();
-            //     currentObject = {};
-            // }
             if (state.tool === TOOLS.EDIT) {
                 if (textarea && textarea[0].value !== '' && e.code !== 'Delete') return;
                 state.tool = state.lasttools;
@@ -3703,8 +3619,6 @@ CanvasRenderingContext2D.prototype.clear = function () {
             var dy = Math.floor((e.pageY - $(canvas.current.canvas).offset().top) / kzoom) - copyObject.y;
 
             objects.push(cloneObject(copyObject));
-//            copyObject = null;
-
             objects[objects.length - 1].move(dx, dy, false);
             objects[objects.length - 1].moveEnd();
 
@@ -3717,12 +3631,12 @@ CanvasRenderingContext2D.prototype.clear = function () {
 
             var x = 0, y = 0, step = 3;
 
-            if (k == 37 /*left*/) x -= step;
-            if (k == 38 /*up*/) y -= step;
-            if (k == 39 /*right*/) x += step;
-            if (k == 40 /*down*/) y += step;
+            if (k === 37 /*left*/) x -= step;
+            if (k === 38 /*up*/) y -= step;
+            if (k === 39 /*right*/) x += step;
+            if (k === 40 /*down*/) y += step;
 
-            if (objects[currentN].type != 'text' && objects[currentN].type != 'sticker' && objects[currentN].type != 'textarrow') {
+            if (objects[currentN].type !== 'text' && objects[currentN].type !== 'sticker' && objects[currentN].type !== 'textarrow') {
                 objects[currentN].marker = -1;
                 objects[currentN].move(x, y, false);
                 objects[currentN].moveEnd();
@@ -3736,20 +3650,22 @@ CanvasRenderingContext2D.prototype.clear = function () {
             state.lock = !state.lock;
         };
 
-        this.setToolsWigth = function (w) {
-            LS.setting.width = w;
-            localStorage.setItem('setting', JSON.stringify(LS.setting));
+        this.setFillColor = function (color) {
+            localStorage.setItem('fillColor', color);
         };
 
-        this.setToolsColor = function (c) {
-            LS.setting.color = c;
-            localStorage.setItem('setting', JSON.stringify(LS.setting));
+        this.setToolsWigth = function (size) {
+            localStorage.setItem('strokeSize', size);
         };
 
-        this.setShadow = function (s) {
-            state.shadow = s;
-            LS.shadow = s;
-            localStorage.setItem('shadow', JSON.stringify(s));
+        this.setToolsColor = function (color) {
+            localStorage.setItem('strokeColor', color);
+        };
+
+        this.setShadow = function (shadow) {
+            localStorage.setItem('shadow', shadow.enable);
+            localStorage.setItem('shadowBlur', shadow.blur);
+            localStorage.setItem('shadowColor', shadow.color);
         };
 
         this.getShadow = function () {
@@ -3760,15 +3676,9 @@ CanvasRenderingContext2D.prototype.clear = function () {
         };
 
         this.setEnableNumbers = function (n) {
-            enablenumbers = n;
+            enableNumbers = n;
+            showFontSettings(false);
             drawAll();
-        };
-
-        this.getFon = function () {
-            return {
-                size: state.fontSize,
-                family: state.fontFamily
-            }
         };
 
         this.setFontSize = function (s) {
@@ -3778,11 +3688,8 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 }
                 drawAll();
             }
-            state.fontSize = s;
-
-            LS.font.size = s;
-            localStorage.setItem('font', JSON.stringify(LS.font));
             setFontProperty(s, false);
+            state.fontSize = s;
         };
 
         this.setFontFamily = function (f) {
@@ -3792,12 +3699,9 @@ CanvasRenderingContext2D.prototype.clear = function () {
                 }
                 drawAll();
             }
-            state.fontFamily = f;
-
-            LS.font.family = f;
-            localStorage.setItem('font', JSON.stringify(LS.font));
 
             setFontProperty(false, f);
+            state.fontFamily = f;
         };
 
         this.scrollPage = scrollPage;

@@ -14,14 +14,13 @@
 
 (function ($) {
     window.thisScrollCrop = true;
-    var jcrop;
-    var firstMove = 0;
-    var isDown;
-    var hideFixedElements = false;
-    var fixedElements = [];
+    let jcrop;
+    let isDown;
+    let hideFixedElements = false;
+    let fixedElements = [];
 
     function autoScroll(event) {
-        var clientY = event.clientY,
+        let clientY = event.clientY,
             clientX = event.clientX,
             restY = window.innerHeight - clientY,
             restX = window.innerWidth - clientX,
@@ -41,37 +40,35 @@
         if (!hideFixedElements) return;
 
         if (enableFlag) {
-            for (var i = 0, l = fixedElements.length; i < l; ++i) {
-                //  transition-property: none !important; transform: none !important; animation: none !important;
+            for (let i = 0, l = fixedElements.length; i < l; ++i) {
                 fixedElements[i].style.cssText = fixedElements[i].style.cssText.replace('opacity: 0 !important;', '');
             }
             fixedElements = [];
         } else {
-            var $vk_layer_wrap = document.querySelectorAll('#wk_layer_wrap');
+            let $vk_layer_wrap = document.querySelectorAll('#wk_layer_wrap');
 
-            if (location.host == 'vk.com' && $vk_layer_wrap.length && $vk_layer_wrap[0].style.display == 'block') {
+            if (location.host === 'vk.com' && $vk_layer_wrap.length && $vk_layer_wrap[0].style.display === 'block') {
                 fixedElements = document.querySelectorAll('#chat_onl_wrap, #wk_right_nav, #wk_left_arrow_bg, #wk_right_arrow_bg');
             } else {
-                var nodeIterator = document.createNodeIterator(document.documentElement, NodeFilter.SHOW_ELEMENT, null, false);
-                var currentNode;
+                let nodeIterator = document.createNodeIterator(document.documentElement, NodeFilter.SHOW_ELEMENT, null, false);
+                let currentNode;
                 while (currentNode = nodeIterator.nextNode()) {
-                    var nodeComputedStyle = document.defaultView.getComputedStyle(currentNode, "");
+                    let nodeComputedStyle = document.defaultView.getComputedStyle(currentNode, "");
                     if (!nodeComputedStyle) return;
-                    if (nodeComputedStyle.getPropertyValue("position") == "fixed" || nodeComputedStyle.getPropertyValue("position") == "sticky") {
+                    if (nodeComputedStyle.getPropertyValue("position") === "fixed" || nodeComputedStyle.getPropertyValue("position") === "sticky") {
                         fixedElements.push(currentNode);
                     }
                 }
             }
 
-            for (var k = 0, len = fixedElements.length; k < len; ++k) {
-                // transition-property: none !important; transform: none !important; animation: none !important;
+            for (let k = 0, len = fixedElements.length; k < len; ++k) {
                 fixedElements[k].style.cssText += 'opacity: 0 !important;';
             }
         }
     }
 
     function getSize() {
-        var body = document.body,
+        let body = document.body,
             html = document.documentElement,
             page_w = Math.max(body.scrollWidth, body.offsetWidth, html.clientWidth, html.scrollWidth, html.offsetWidth),
             page_h = Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
@@ -79,8 +76,10 @@
     }
 
     function scrollCrop() {
-        var size = getSize();
-        var pole = $('<div id="areafon">').appendTo('body');
+        afterClearCapture(true);
+
+        let size = getSize();
+        let pole = $('<div id="nsc_crop">').appendTo('body');
         pole.append('<div class="cropNotification">' + chrome.i18n.getMessage("notificationCrop") + '</div>');
 
         pole.css({
@@ -93,7 +92,7 @@
             backgroundColor: 'rgba(0,0,0,0.2)'
         });
 
-        var crop = $('<div>').appendTo(pole);
+        let crop = $('<div>').appendTo(pole);
 
         crop.css({
             opacity: '0.1',
@@ -112,7 +111,7 @@
             }
         });
 
-        chrome.extension.sendMessage({msg: 'getCropScrollPosition'}, function (response) {
+        chrome.runtime.sendMessage({msg: 'getCropScrollPosition'}, function (response) {
             if (response.x2 && response.y && response.x2 <= size.w && response.y2 <= size.h) {
                 jcrop.setSelect([response.x, response.y, response.x2, response.y2]);
                 $("html, body").animate({scrollTop: response.y}, "slow");
@@ -132,7 +131,7 @@
 
         pole.bind({
             'mousemove': function (e) {
-                if (e.which == 3) {
+                if (e.which === 3) {
                     destroyCrop();
                     return false;
                 }
@@ -143,9 +142,6 @@
                 return false;
             }
         });
-
-
-        afterClearCapture(true);
     }
 
     function createCoords(c) {
@@ -157,7 +153,7 @@
             return;
         }
 
-        var ns_crop_buttons = $('<div/>', {
+        let ns_crop_buttons = $('<div/>', {
             'id': 'screenshotbutton',
             'class': 'ns-crop-buttons bottom'
         });
@@ -166,7 +162,7 @@
             html: '<i></i><span>' + chrome.i18n.getMessage("cropBtnEdit") + '</span>',
             'class': 'ns-btn edit'
         }).on('click', function () {
-            chrome.extension.sendRequest({'operation': 'cropScroll'});
+            chrome.runtime.sendMessage({'operation': 'generate_selected_scroll'});
             destroyCrop();
         }).appendTo(ns_crop_buttons);
 
@@ -174,7 +170,7 @@
             html: '<i></i><span>' + chrome.i18n.getMessage("cropBtnSave") + '</span>',
             'class': 'ns-btn save'
         }).on('click', function () {
-            chrome.extension.sendRequest({operation: 'saveScroll', 'scrollToCrop': false});
+            chrome.runtime.sendMessage({operation: 'generate_selected_scroll_save'});
             destroyCrop();
         }).appendTo(ns_crop_buttons);
 
@@ -185,13 +181,13 @@
             destroyCrop();
         }).appendTo(ns_crop_buttons);
 
-        var ns_crop_more = $('<div/>', {
+        let ns_crop_more = $('<div/>', {
             html: '<button></button>',
             'id': 'ns_crop_more',
             'class': 'ns-crop-more'
         });
 
-        var ns_more_container = $('<div/>', {
+        let ns_more_container = $('<div/>', {
             'id': 'ns_more_container',
             'class': 'ns-crop-more-container'
         });
@@ -200,7 +196,7 @@
             html: '<span>Nimbus</span>',
             'class': 'ns-btn nimbus'
         }).on('click', function () {
-            chrome.extension.sendRequest({operation: 'send_to_nimbus_scroll'});
+            chrome.runtime.sendMessage({operation: 'send_to', path: 'nimbus_scroll'});
             destroyCrop();
         }).appendTo(ns_more_container);
 
@@ -208,7 +204,7 @@
             html: '<span>Slack</span>',
             'class': 'ns-btn slack'
         }).on('click', function () {
-            chrome.extension.sendRequest({operation: 'send_to_slack_scroll'});
+            chrome.runtime.sendMessage({operation: 'send_to', path: 'slack_scroll'});
             destroyCrop();
         }).appendTo(ns_more_container);
 
@@ -216,7 +212,7 @@
             html: '<span>Google Drive</span>',
             'class': 'ns-btn google'
         }).on('click', function () {
-            chrome.extension.sendRequest({operation: 'send_to_google_scroll'});
+            chrome.runtime.sendMessage({operation: 'send_to', path: 'google_scroll'});
             destroyCrop();
         }).appendTo(ns_more_container);
 
@@ -224,13 +220,13 @@
             html: '<span>Print</span>',
             'class': 'ns-btn print'
         }).on('click', function () {
-            chrome.extension.sendRequest({operation: 'send_to_print_scroll'});
+            chrome.runtime.sendMessage({operation: 'send_to', path: 'print_scroll'});
             destroyCrop();
         }).appendTo(ns_more_container);
 
         ns_crop_more.append(ns_more_container);
 
-        var drag = $('.jcrop-dragbar').first();
+        let drag = $('.jcrop-dragbar').first();
         drag.before('<div id="screenshotsize" class="ns-crop-size"></div>');
         drag.before(ns_crop_buttons);
         drag.before(ns_crop_more);
@@ -239,18 +235,18 @@
     }
 
     function saveCropPosition(c) {
-        chrome.extension.sendMessage({msg: 'saveCropScrollPosition', position: c});
+        chrome.runtime.sendMessage({msg: 'saveCropScrollPosition', position: c});
     }
 
     function destroyCrop() {
         window.thisScrollCrop = false;
         enableFixedPosition(true);
         beforeClearCapture(true);
-        $('#areafon').remove();
+        $('#nsc_crop').remove();
     }
 
     function showCoords(c) {
-        var z = 1;//window.devicePixelRatio || 1;
+        let z = 1;//window.devicePixelRatio || 1;
         $('#screenshotsize').html('<span>' + (c.w * z) + ' x ' + (c.h * z) + '</span>');
 
         if ((c.h + c.y + 60) > $(window).height() + $(window).scrollTop()) {
@@ -271,22 +267,12 @@
             $('#screenshotsize').css({'bottom': '100%', 'top': 'auto'});
         }
 
-        cropImage(c);
-    }
-
-    function cropImage(c) {
-        chrome.extension.sendRequest({
-            'operation': 'cap',
-            'xs': c.x,
-            'ys': c.y,
-            'ws': c.w,
-            'hs': c.h
-        });
+        chrome.runtime.sendMessage({'operation': 'set_core_cap','xs': c.x,'ys': c.y, 'ws': c.w,'hs': c.h });
     }
 
     window.addEventListener('keydown', function (evt) {
         evt = evt || window.event;
-        if (evt.keyCode == 27) {
+        if (evt.keyCode === 27) {
             destroyCrop();
         }
     }, false);

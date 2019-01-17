@@ -12,6 +12,4 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * */
 
-chrome.extension.sendRequest({'operation': 'Fragment', 'parameter': window.thisFragment});
-chrome.extension.sendRequest({'operation': 'Crop', 'parameter': window.thisCrop});
-chrome.extension.sendRequest({'operation': 'Scroll', 'parameter': window.thisScrollCrop});
+chrome.runtime.sendMessage({'operation': 'check_tab_action', 'action': 'back_is_page', 'value': JSON.stringify({chrome: false, fragment: window.thisFragment, crop: window.thisCrop, scroll_crop: window.thisScrollCrop, url: window.location.href})});

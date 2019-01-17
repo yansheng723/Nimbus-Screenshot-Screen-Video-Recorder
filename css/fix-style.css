@@ -74,15 +74,24 @@ html.pre-loader {
 }
 
 .nsc-canvas-wrap {
-    margin: 50px 0 10px;
+    margin: 50px 0 0;
+    /*overflow: auto;*/
+    /*overflow: hidden;*/
+}
+
+.nsc-canvas-scroll {
+    position: relative;
+}
+
+.nsc-canvas-crop {
     overflow: hidden;
 }
 
-.nsc-canvas-wrap.blank canvas {
-    background-color: #414141;
-}
+/*.nsc-canvas-wrap.blank canvas {*/
+/*background-color: #414141;*/
+/*}*/
 
-#nsc_canvas textarea {
+.nsc-canvas textarea {
     position: absolute;
     z-index: 50;
     background-color: transparent;
@@ -99,7 +108,7 @@ html.pre-loader {
     padding: 0;
 }
 
-#nsc_canvas textarea::-webkit-input-placeholder {
+.nsc-canvas textarea::-webkit-input-placeholder {
     color: #3d3d3d;
     font-weight: bold;
     text-shadow: none;
@@ -126,13 +135,30 @@ html.pre-loader {
     margin: 5px;
 }
 
+.nsc-popup {
+    font-size: 14px;
+    /*line-height: 18px;*/
+}
+
+.nsc-popup-form {
+    width: 250px;
+}
+
+.nsc-popup-actions-buttons {
+    width: auto;
+}
+
+.nsc-popup-actions-buttons .button:last-child {
+    margin: 0 0 8px 0;
+}
+
 #nsc_slack_connect {
     width: 600px !important;
 }
 
 #nsc_slack_connect .nsc-popup-actions-text {
-    font-size: 14px;
-    line-height: 26px;
+    /*font-size: 14px;*/
+    /*line-height: 26px;*/
     text-align: left;
 }
 
@@ -140,29 +166,34 @@ html.pre-loader {
     width: 400px !important;
 }
 
-#nsc_account_popup .nsc-popup-actions-text {
-    font-size: 14px;
-    line-height: 18px;
+.nsc-popup-actions-icon-list {
+    /*font-size: 14px;*/
+    /*line-height: 18px;*/
     text-align: left;
 }
 
-#nsc_account_popup .nsc-popup-actions-text ul {
+.nsc-popup-actions-icon-list ul {
     margin: 0;
     padding: 0 10px 0 20px;
 }
 
-#nsc_account_popup .nsc-popup-actions-text ul li {
+.nsc-popup-actions-icon-list ul li {
     list-style: none;
     padding: 0 0 0 45px;
     position: relative;
     margin-bottom: 15px;
 }
 
-#nsc_account_popup .nsc-popup-actions-text ul li .nsc-icon {
+.nsc-popup-actions-icon-list ul li .nsc-icon {
     position: absolute;
     left: 0;
     top: 50%;
     margin-top: -12px;
+}
+
+#nsc_buy_pro .nsc-popup-actions-text ul li {
+    text-align: left;
+    font-size: 14px;
 }
 
 #nsc_account_popup .nsc-popup-actions-buttons {
@@ -194,6 +225,10 @@ html.pre-loader {
     margin: 0 0 10px;
 }
 
+.nsc-file-manager-folders img {
+    margin-right: 5px;
+}
+
 .nsc-file-manager-folders-list {
     height: 230px;
     overflow-y: auto;
@@ -206,7 +241,7 @@ html.pre-loader {
 }
 
 .nsc-file-manager-folders-list.loading {
-    background: url(../images/loading-v1.gif) no-repeat 50% 50%;
+    background: url(../images/loader/loading-v1.gif) no-repeat 50% 50%;
     opacity: 0.5;
     overflow: hidden;
 }
@@ -221,7 +256,7 @@ html.pre-loader {
     text-overflow: ellipsis;
     overflow: hidden;
     cursor: pointer;
-    padding: 3px 3px 3px 30px;
+    padding: 3px 3px 3px 26px;
     margin: 2px 0;
     background: url(../images/folder_points.png) no-repeat 13px 8px;
 }
@@ -326,11 +361,11 @@ html.pre-loader {
     bottom: -1px;
 }
 
-.nsc-trigger-panel .nsc-trigger-panel-title:hover {
+.nsc-trigger-panel .nsc-trigger-panel-title {
     padding-right: 16px;
 }
 
-.nsc-trigger-panel .nsc-trigger-panel-title:hover:after {
+.nsc-trigger-panel .nsc-trigger-panel-title:after {
     background: url(../images/edit_pane_btn.png) no-repeat -104px 0;
     width: 17px;
     height: 19px;
@@ -351,20 +386,23 @@ html.pre-loader {
     text-align: right;
 }
 
-.nsc-trigger-panel .nsc-trigger-panel-logout a{
+.nsc-trigger-panel .nsc-trigger-panel-logout a {
     cursor: pointer;
 }
 
-.nsc-box-save-google-drive {
+.nsc-trigger-panel-container {
     position: relative;
 }
 
-.nsc-box-save-google-drive.auth {
+.nsc-trigger-panel-container.is_trigger {
     padding-right: 5px;
 }
 
+.nsc-trigger-panel-container.is_trigger .nsc-choose-trigger-panel {
+    display: block;
+}
 
-.nsc-box-save-google-drive.auth .nsc-choose-trigger-panel {
+.nsc-trigger-panel-container.active .nsc-trigger-panel {
     display: block;
 }
 
@@ -395,15 +433,15 @@ html.pre-loader {
     height: 20px
 }
 
-.nsc-global {
-    position: relative;
-    width: 100%;
-    min-height: 100%;
-    height: 100%;
-}
+/*.nsc-global {*/
+/*position: relative;*/
+/*width: 100%;*/
+/*min-height: 100%;*/
+/*height: 100%;*/
+/*}*/
 
 .nsc-indicator {
-    margin: 0 auto;
+    margin: 0 auto 5px;
 }
 
 .nsc-aside {
@@ -412,11 +450,11 @@ html.pre-loader {
 
 #nsc_drop_file {
     text-align: center;
-    box-sizing: border-box;
-    position: absolute;
-    z-index: 999;
-    width: 100%;
-    height: 100%;
+    /* box-sizing: border-box; */
+    position: relative;
+    z-index: 99999;
+    /* width: 100%; */
+    /* height: 100%; */
     padding: 20px;
 }
 
@@ -445,6 +483,7 @@ html.pre-loader {
     display: inline-block;
     vertical-align: top;
     margin: 0 5px;
+    height: 50px;
 }
 
 #nsc_drop_file .upwards {
@@ -458,6 +497,19 @@ html.pre-loader {
     color: #189FB5;
 }
 
+.nsc-pre-load {
+    width: 400px;
+    border: 2px dashed #5a5a5a;
+    border-radius: 4px;
+    color: #fff;
+    text-transform: uppercase;
+    font-size: 16px;
+    font-weight: bold;
+    padding: 30px 30px 30px 90px;
+    margin: 100px auto 0;
+    background: rgba(90, 90, 90, 0.3) url(chrome-extension://__MSG_@@extension_id__/images/loader/ring-alt.svg) no-repeat 20px center;
+}
+
 .nsc-linked {
     width: 70%;
     position: absolute;
@@ -466,16 +518,14 @@ html.pre-loader {
     padding: 8px;
 }
 
-#nsc_message_view_uploads {
-    width: 100%;
-    padding: 8px;
-}
-
 #nsc_loading_upload_file {
     width: 100%;
     height: 32px;
     margin: 8px auto;
-    background: url('../images/loading.gif') center no-repeat;
+    background: url('../images/loader/loading.gif') center 22px no-repeat;
+    color: #fff;
+    line-height: 16px;
+    font-size: 16px;
 }
 
 .nsc-message-status-visible {
@@ -483,13 +533,19 @@ html.pre-loader {
     position: relative;
 }
 
-.nsc-message-status-visible > div {
+.nsc-message-status-visible > a {
+    width: 100%;
+    padding: 8px;
+    display: block;
+}
+
+.nsc-message-status-visible > * {
     position: absolute;
     visibility: hidden;
     opacity: 0;
 }
 
-.nsc-message-status-visible > div.visible {
+.nsc-message-status-visible > *.visible {
     visibility: visible;
     opacity: 1;
 }
@@ -592,6 +648,31 @@ html.pre-loader {
     margin: 6px 10px 0 0;
 }
 
+.nsc-capture-flags-tabs .nsc-capture-flag {
+    min-width: 50%;
+    padding: 4px 0;
+}
+
+.nsc-heading-actions .premium {
+    display: none;
+}
+
+.nsc-heading-actions premium a {
+    color: #48d1cc;
+}
+
+.nsc-capture-switcher.disabled {
+    opacity: 0.5;
+}
+
+.nsc-capture-switcher.disabled .nsc-capture-switcher-toggle {
+    display: none;
+}
+
+.nsc-preview img {
+    cursor: pointer;
+}
+
 @-webkit-keyframes rotating {
     from {
         -webkit-transform: rotate(0deg);
@@ -626,4 +707,80 @@ html.pre-loader {
 .rotating-horizontally {
     -webkit-animation: rotating-horizontally 4s linear infinite;
     animation: rotating-horizontally 4s linear infinite;
+}
+
+.nsc-settings-watermark-box-item {
+    cursor: pointer;
+}
+
+.nsc-settings-watermark-text-option-action select {
+    max-width: 150px;
+}
+
+.nsc-settings-watermark-text-option-action input {
+    max-width: 50px;
+}
+
+/*.nsc-settings-watermark-preview-box{*/
+/*overflow: hidden;*/
+/*}*/
+
+/*.nsc-settings-watermark-item, .nsc-settings-watermark-item img {*/
+/*-webkit-user-drag: none;*/
+/*-webkit-user-select: none;*/
+/*width: 100%;*/
+/*height: 100%;*/
+/*opacity: 1;*/
+/*}*/
+
+.nsc-settings-shortcut-name {
+    width: 60%;
+    min-width: 60% !important;
+    max-width: 60% !important;
+    -webkit-flex: 1 1 60% !important;
+}
+
+.nsc-settings-page .nsc-wrapper {
+    width: 550px;
+}
+
+.nsc-settings-tab-button {
+    text-transform: uppercase;
+}
+
+.nsc-settings-tab-button-wrapper {
+    text-align: center;
+}
+
+.nsc-done-content {
+    padding: 0;
+}
+
+.nsc-done-page {
+    width: auto;
+    height: auto;
+}
+
+.nsc-capture-flag-text {
+    margin-top: -2px;
+}
+
+.nsc-ve-content-wrapper, .nsc-ve-options-wrapper {
+    max-width: 1500px;
+}
+
+.nsc-indicator {
+    color: #c9c9c9;
+}
+
+.nsc-file-manager .nsc-popup-heading-title {
+    display: none;
+}
+
+.nsc-file-manager.is_google .nsc-title-google {
+    display: flex;
+}
+
+.nsc-file-manager.is_dropbox .nsc-title-dropbox {
+    display: flex;
 }

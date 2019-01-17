@@ -31,6 +31,11 @@
 
 (function ($) {
 
+    window.is_firefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    window.is_chrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor) && !/OPR/.test(navigator.userAgent);
+    window.is_opera = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor) && /OPR/.test(navigator.userAgent);
+    window.is_edge = navigator.userAgent.indexOf("Edge") > -1;
+
     $.Jcrop = function (obj, opt) {
         var options = $.extend({}, $.Jcrop.defaults), docOffset, _ua = navigator.userAgent.toLowerCase(), is_msie = /msie/.test(_ua), ie6mode = /msie [1-6]\./.test(_ua);
 
@@ -312,9 +317,9 @@
             'max-width': '999999px'
         };
 
-        var z = window.devicePixelRatio || 1;
+        var z = window.is_chrome ? window.devicePixelRatio : 1;
         var $origimg = $(obj), img_mode = true;
-        if (obj.tagName == 'IMG') {
+        if (obj.tagName === 'IMG') {
             var tempImage = new Image();
             tempImage.src = obj.src;
             tempImage.onload = function () {
@@ -1350,7 +1355,8 @@
                 return;
             }
 
-            var animto = Coords.flipCoords(x1, y1, x2, y2), c = Coords.getFixed(), initcr = [c.x, c.y, c.x2, c.y2], animat = initcr, interv = options.animationDelay, ix1 = animto[0] - initcr[0], iy1 = animto[1] - initcr[1], ix2 = animto[2] - initcr[2], iy2 = animto[3] - initcr[3], pcent = 0, velocity = options.swingSpeed;
+            var animto = Coords.flipCoords(x1, y1, x2, y2), c = Coords.getFixed(), initcr = [c.x, c.y, c.x2, c.y2], animat = initcr, interv = options.animationDelay, ix1 = animto[0] - initcr[0], iy1 = animto[1] - initcr[1], ix2 = animto[2] - initcr[2], iy2 = animto[3] - initcr[3], pcent = 0,
+                velocity = options.swingSpeed;
 
             x1 = animat[0];
             y1 = animat[1];

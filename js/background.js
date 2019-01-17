@@ -14,300 +14,34 @@
 
 "use strict";
 
-function scaleCanvas(imgdata, scale, cb) {
-    // localStorage.keepOriginalResolution
-    var HERMITE = new Hermite_class();
-    var img = new Image();
-    var canvas = document.createElement('canvas');
-    var ctx = canvas.getContext("2d");
-    img.crossOrigin = 'anonymous';
-    img.onload = resize;
-    img.src = imgdata;
-
-    function resize() {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        HERMITE.resample_single(canvas, img.width / scale, img.height / scale, true);
-        return cb && cb(canvas);
-    }
-
-
-//default resize
-
-//more options
-//     HERMITE.resample(canvas, width, height, true, finish_handler); //true=resize canvas
-//single core
-//     HERMITE.resample_single(canvas, width, height);
-
-// //resize image to 300x100
-//     HERMITE.resize_image('image_id', 300, 100);
-// //resize image to 50%
-//     HERMITE.resize_image('image_id', null, null, 50);
-
-
-    // var canvas = document.createElement('canvas'),
-    //     ctx = canvas.getContext("2d"),
-    //     img = new Image();
-    //
-    // img.crossOrigin = 'anonymous';
-    // img.onload = resize;
-    // img.src = imgdata;
-    //
-    // function resize() {
-    //     var oc = document.createElement('canvas'),
-    //         octx = oc.getContext('2d');
-    //     canvas.width = img.width * scale;
-    //     canvas.height = canvas.width * (img.height / img.width);
-    //     oc.width = img.width * scale;
-    //     oc.height = img.height * scale;
-    //
-    //     octx.drawImage(img, 0, 0, oc.width, oc.height);
-    //     octx.drawImage(oc, 0, 0, oc.width * scale, oc.height * scale);
-    //     ctx.drawImage(oc, 0, 0, oc.width * scale, oc.height * scale, 0, 0, canvas.width, canvas.height);
-    //     return cb && cb(canvas);
-    // }
-
-
-    // var thumbWidth = 1400;
-    //
-    // var image = new Image();
-    // image.src = imgdata;
-    //
-    // var canvas = document.createElement('canvas');
-    // var ctx = canvas.getContext("2d");
-    //
-    // image.onload = function () {
-    //     var newHeight = Math.floor(image.height * 0.9);
-    //     var newWidth = Math.floor(image.width * 0.9);
-    //     console.log(image.width, image.height, newHeight, newWidth);
-    //
-    //     if (newWidth >= thumbWidth) {
-    //         canvas.width = newWidth;
-    //         canvas.height = newHeight;
-    //
-    //         ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-    //
-    //         image.src = canvas.toDataURL();
-    //         image.height = newHeight;
-    //     } else {
-    //         return cb && cb(canvas);
-    //     }
-    // }
-}
-
-// https://stackoverflow.com/questions/18922880/html5-canvas-resize-downscale-image-high-quality
-function downScaleCanvas(cv, scale) {
-    if (!(scale < 1) || !(scale > 0)) return cv;
-    var sqScale = scale * scale; // square scale = area of source pixel within target
-    var sw = cv.width; // source image width
-    var sh = cv.height; // source image height
-    var tw = Math.floor(sw * scale); // target image width
-    var th = Math.floor(sh * scale); // target image height
-    var sx = 0, sy = 0, sIndex = 0; // source x,y, index within source array
-    var tx = 0, ty = 0, yIndex = 0, tIndex = 0; // target x,y, x,y index within target array
-    var tX = 0, tY = 0; // rounded tx, ty
-    var w = 0, nw = 0, wx = 0, nwx = 0, wy = 0, nwy = 0; // weight / next weight x / y
-    // weight is weight of current source point within target.
-    // next weight is weight of current source point within next target's point.
-    var crossX = false; // does scaled px cross its current px right border ?
-    var crossY = false; // does scaled px cross its current px bottom border ?
-    var sBuffer = cv.getContext('2d').getImageData(0, 0, sw, sh).data; // source buffer 8 bit rgba
-    var tBuffer = new Float32Array(3 * tw * th); // target buffer Float32 rgb
-    var sR = 0, sG = 0, sB = 0; // source's current point r,g,b
-
-    for (sy = 0; sy < sh; sy++) {
-        ty = sy * scale; // y src position within target
-        tY = 0 | ty;     // rounded : target pixel's y
-        yIndex = 3 * tY * tw;  // line index within target array
-        crossY = (tY !== (0 | (ty + scale)));
-        if (crossY) { // if pixel is crossing botton target pixel
-            wy = (tY + 1 - ty); // weight of point within target pixel
-            nwy = (ty + scale - tY - 1); // ... within y+1 target pixel
-        }
-        for (sx = 0; sx < sw; sx++, sIndex += 4) {
-            tx = sx * scale; // x src position within target
-            tX = 0 | tx;    // rounded : target pixel's x
-            tIndex = yIndex + tX * 3; // target pixel index within target array
-            crossX = (tX !== (0 | (tx + scale)));
-            if (crossX) { // if pixel is crossing target pixel's right
-                wx = (tX + 1 - tx); // weight of point within target pixel
-                nwx = (tx + scale - tX - 1); // ... within x+1 target pixel
-            }
-            sR = sBuffer[sIndex];   // retrieving r,g,b for curr src px.
-            sG = sBuffer[sIndex + 1];
-            sB = sBuffer[sIndex + 2];
-            if (!crossX && !crossY) { // pixel does not cross
-                // just add components weighted by squared scale.
-                tBuffer[tIndex] += sR * sqScale;
-                tBuffer[tIndex + 1] += sG * sqScale;
-                tBuffer[tIndex + 2] += sB * sqScale;
-            } else if (crossX && !crossY) { // cross on X only
-                w = wx * scale;
-                // add weighted component for current px
-                tBuffer[tIndex] += sR * w;
-                tBuffer[tIndex + 1] += sG * w;
-                tBuffer[tIndex + 2] += sB * w;
-                // add weighted component for next (tX+1) px
-                nw = nwx * scale
-                tBuffer[tIndex + 3] += sR * nw;
-                tBuffer[tIndex + 4] += sG * nw;
-                tBuffer[tIndex + 5] += sB * nw;
-            } else if (!crossX && crossY) { // cross on Y only
-                w = wy * scale;
-                // add weighted component for current px
-                tBuffer[tIndex] += sR * w;
-                tBuffer[tIndex + 1] += sG * w;
-                tBuffer[tIndex + 2] += sB * w;
-                // add weighted component for next (tY+1) px
-                nw = nwy * scale
-                tBuffer[tIndex + 3 * tw] += sR * nw;
-                tBuffer[tIndex + 3 * tw + 1] += sG * nw;
-                tBuffer[tIndex + 3 * tw + 2] += sB * nw;
-            } else { // crosses both x and y : four target points involved
-                // add weighted component for current px
-                w = wx * wy;
-                tBuffer[tIndex] += sR * w;
-                tBuffer[tIndex + 1] += sG * w;
-                tBuffer[tIndex + 2] += sB * w;
-                // for tX + 1; tY px
-                nw = nwx * wy;
-                tBuffer[tIndex + 3] += sR * nw;
-                tBuffer[tIndex + 4] += sG * nw;
-                tBuffer[tIndex + 5] += sB * nw;
-                // for tX ; tY + 1 px
-                nw = wx * nwy;
-                tBuffer[tIndex + 3 * tw] += sR * nw;
-                tBuffer[tIndex + 3 * tw + 1] += sG * nw;
-                tBuffer[tIndex + 3 * tw + 2] += sB * nw;
-                // for tX + 1 ; tY +1 px
-                nw = nwx * nwy;
-                tBuffer[tIndex + 3 * tw + 3] += sR * nw;
-                tBuffer[tIndex + 3 * tw + 4] += sG * nw;
-                tBuffer[tIndex + 3 * tw + 5] += sB * nw;
-            }
-        } // end for sx
-    } // end for sy
-
-    // create result canvas
-    var resCV = document.createElement('canvas');
-    resCV.width = tw;
-    resCV.height = th;
-    var resCtx = resCV.getContext('2d');
-    var imgRes = resCtx.getImageData(0, 0, tw, th);
-    var tByteBuffer = imgRes.data;
-    // convert float32 array into a UInt8Clamped Array
-    var pxIndex = 0; //
-    for (sIndex = 0, tIndex = 0; pxIndex < tw * th; sIndex += 3, tIndex += 4, pxIndex++) {
-        tByteBuffer[tIndex] = 0 | (tBuffer[sIndex]);
-        tByteBuffer[tIndex + 1] = 0 | (tBuffer[sIndex + 1]);
-        tByteBuffer[tIndex + 2] = 0 | (tBuffer[sIndex + 2]);
-        tByteBuffer[tIndex + 3] = 255;
-    }
-    // writing result to canvas.
-    resCtx.putImageData(imgRes, 0, 0);
-    return resCV;
-}
-
-chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-    if (changeInfo.status == "loading" && /nimbusweb\.me\/slack\/\?code/.test(tab.url)) {
-        console.log(tab);
-        var code = tab.url.match(/code=(.+)&/)[1];
-        var client_id = '17258488439.50405596566';
-        var client_secret = '55775ecb78fe5cfc10250bd0119e0fc5';
-        chrome.tabs.remove(tabId);
-
-        screenshot.slack.requestToApi('oauth.access', 'client_id=' + client_id + '&client_secret=' + client_secret + '&code=' + code, function (err, oauth) {
-            screenshot.slack.oauth = oauth;
-            localStorage.slackToken = screenshot.slack.oauth.access_token;
-            screenshot.slack.sendData();
-        })
-    }
-    if (changeInfo.status == "complete" && /everhelper\.me\/auth\/openidconnect/.test(tab.url) && /###EVERFAUTH:/.test(tab.title)) {
-        var json = JSON.parse(tab.title.match(/###EVERFAUTH:(.+)/)[1]);
-        json.action = 'nimbus_auth';
-
-        chrome.tabs.remove(tabId);
-        chrome.tabs.query({/*active: true, lastFocusedWindow: true*/}, function (tabs) {
-            for (var i = 0; i < tabs.length; i++) {
-                chrome.tabs.sendRequest(tabs[i].id, json);
-            }
-        });
-    }
-    if (changeInfo.status == "complete" && /accounts\.google\.com\/o\/oauth2\/approval/.test(tab.url)
-        && /code=/.test(tab.title) && google_oauth.is_tab_google) {
-        var code = tab.title.match(/.+?code=([\w\/\-]+)/)[1];
-        var xhr = new XMLHttpRequest();
-        var body = 'code=' + code +
-            '&client_id=' + google_oauth.client_id +
-            '&client_secret=' + google_oauth.client_secret +
-            '&grant_type=authorization_code' +
-            '&redirect_uri=urn:ietf:wg:oauth:2.0:oob:auto';
-        xhr.open("POST", 'https://www.googleapis.com/oauth2/v4/token', true);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.onload = function () {
-            if (xhr.readyState != 4 && xhr.status != 200) return;
-            google_oauth.is_tab_google = false;
-            console.log(xhr.responseText);
-            var response = JSON.parse(xhr.responseText);
-            console.log(response);
-            if (response.access_token != undefined && response.refresh_token != undefined) {
-                localStorage.access_token = response.access_token;
-                localStorage.refresh_token = response.refresh_token;
-                localStorage.expires_in = Date.now() + +response.expires_in;
-
-                chrome.tabs.remove(tabId);
-                chrome.tabs.query({/*active: true, lastFocusedWindow: true*/}, function (tabs) {
-                    for (var i = 0; i < tabs.length; i++) {
-                        chrome.tabs.sendRequest(tabs[i].id, {operation: 'access_google'});
-                    }
-                });
-            }
-        };
-        xhr.onerror = function (err) {
-            console.error(err);
-        };
-        xhr.send(body);
-    }
-});
-
-var google_oauth = {
+window.google_oauth = {
     client_id: "330587763390.apps.googleusercontent.com",
     client_secret: "Wh5_rPxGej6B7qmsVxvGolg8",
-    scopes: "https://www.googleapis.com/auth/drive.readonly.metadata https://www.googleapis.com/auth/drive.file",
-    is_tab_google: false,
-    getToken: function () {
-        return localStorage.access_token;
-    },
+    scopes: "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.readonly.metadata https://www.googleapis.com/auth/drive.file",
+    is_tab: false,
     login: function () {
-        var url = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+        let url = 'https://accounts.google.com/o/oauth2/v2/auth?' +
             '&client_id=' + google_oauth.client_id +
             '&redirect_uri=urn:ietf:wg:oauth:2.0:oob:auto' +
             '&scope=' + google_oauth.scopes +
             '&access_type=offline' +
             '&response_type=code';
-        google_oauth.is_tab_google = true;
+        google_oauth.is_tab = true;
         chrome.tabs.create({url: url});
     },
     refreshToken: function (cb) {
-        localStorage.access_token = response.access_token;
-        localStorage.refresh_token = response.refresh_token;
-        localStorage.expires_in = Date.now() + +response.expires_in;
-
-        console.log(localStorage.access_token, localStorage.refresh_token, localStorage.expires_in)
-
-        if (localStorage.refresh_token == undefined) {
+        if (localStorage.refresh_token_google === undefined) {
             this.login();
         } else {
-            if (Date.now() < +localStorage.expires_in) {
-                chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
-                    for (var i = 0; i < tabs.length; i++) {
-                        cb && cb();
+            if (Date.now() < (+localStorage.expires_in_google || 0)) {
+                chrome.tabs.query({/*active: true, lastFocusedWindow: true*/}, function (tabs) {
+                    for (let i = 0; i < tabs.length; i++) {
+                        chrome.tabs.sendMessage(tabs[i].id, {operation: 'access_google'});
                     }
                 });
             } else {
-                var xhr = new XMLHttpRequest();
-                var body = 'refresh_token=' + localStorage.refresh_token +
+                let xhr = new XMLHttpRequest();
+                let body = 'refresh_token=' + localStorage.refresh_token_google +
                     '&client_id=' + google_oauth.client_id +
                     '&client_secret=' + google_oauth.client_secret +
                     '&grant_type=refresh_token';
@@ -315,19 +49,19 @@ var google_oauth = {
                 xhr.open("POST", 'https://www.googleapis.com/oauth2/v4/token', true);
                 xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 xhr.onload = function () {
-                    if (xhr.readyState != 4 && xhr.status != 200) return;
+                    if (xhr.readyState !== 4 && xhr.status !== 200) return;
 
-                    var response = JSON.parse(xhr.responseText);
+                    let response = JSON.parse(xhr.responseText);
                     console.log(response);
-                    if (localStorage.access_token != undefined) {
-                        localStorage.access_token = response.access_token;
+                    localStorage.access_token_google = response.access_token;
+                    localStorage.refresh_token_google = response.refresh_token;
+                    localStorage.expires_in_google = Date.now() + +response.expires_in;
 
-                        chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
-                            for (var i = 0; i < tabs.length; i++) {
-                                cb && cb();
-                            }
-                        });
-                    }
+                    chrome.tabs.query({/*active: true, lastFocusedWindow: true*/}, function (tabs) {
+                        for (let i = 0; i < tabs.length; i++) {
+                            chrome.tabs.sendMessage(tabs[i].id, {operation: 'access_google'});
+                        }
+                    });
                 };
                 xhr.onerror = function (err) {
                     console.error(err);
@@ -338,39 +72,86 @@ var google_oauth = {
     }
 };
 
-var plugin = {};
-var screenshot = {
-    path: 'filesystem:chrome-extension://' + chrome.i18n.getMessage("@@extension_id") + '/temporary/',
+window.youtube_oauth = {
+    client_id: "330587763390.apps.googleusercontent.com",
+    client_secret: "Wh5_rPxGej6B7qmsVxvGolg8",
+    scopes: "https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/youtubepartner https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl",
+    is_tab: false,
+    login: function () {
+        let url = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+            '&client_id=' + youtube_oauth.client_id +
+            '&redirect_uri=urn:ietf:wg:oauth:2.0:oob:auto' +
+            '&scope=' + youtube_oauth.scopes +
+            '&access_type=offline' +
+            '&response_type=code';
+        youtube_oauth.is_tab = true;
+        chrome.tabs.create({url: url});
+    },
+    refreshToken: function () {
+        if (localStorage.refresh_token_youtube === undefined) {
+            this.login();
+        } else {
+            if (Date.now() < (+localStorage.expires_in_youtube || 0)) {
+                chrome.tabs.query({/*active: true, lastFocusedWindow: true*/}, function (tabs) {
+                    for (let i = 0; i < tabs.length; i++) {
+                        chrome.tabs.sendMessage(tabs[i].id, {operation: 'access_youtube'});
+                    }
+                });
+            } else {
+                let xhr = new XMLHttpRequest();
+                let body = 'refresh_token=' + localStorage.refresh_token_youtube +
+                    '&client_id=' + youtube_oauth.client_id +
+                    '&client_secret=' + youtube_oauth.client_secret +
+                    '&grant_type=refresh_token';
+
+                xhr.open("POST", 'https://www.googleapis.com/oauth2/v4/token', true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onload = function () {
+                    if (xhr.readyState !== 4 && xhr.status !== 200) return;
+
+                    let response = JSON.parse(xhr.responseText);
+                    console.log(response);
+                    localStorage.access_token_youtube = response.access_token;
+                    localStorage.refresh_token_youtube = response.refresh_token;
+                    localStorage.expires_in_youtube = Date.now() + +response.expires_in;
+
+                    chrome.tabs.query({/*active: true, lastFocusedWindow: true*/}, function (tabs) {
+                        for (let i = 0; i < tabs.length; i++) {
+                            chrome.tabs.sendMessage(tabs[i].id, {operation: 'access_youtube'});
+                        }
+                    });
+
+                };
+                xhr.onerror = function (err) {
+                    console.error(err);
+                };
+                xhr.send(body);
+            }
+        }
+    }
+};
+
+
+let xs, ys, ws, hs, scroll_crop = false, save_scroll = false, send_nimbus = false, send_slack = false,
+    send_google = false, send_print = false, copy_to_clipboard = false;
+
+let screenshot = {
+    path: 'filesystem:chrome-extension://' + chrome.i18n.getMessage("@@extension_id") + '/persistent/',
+    // tab_action: {
+    //     chrome: false,
+    //     fragment: false,
+    //     crop: false,
+    //     scroll_crop: false,
+    // },
     generated: false,
-    newwholepage: true,
     enableNpapi: false,
     imgData: null,
     button_video: null,
-    videoRecorder: videoRecorder,
-    selectedOptionFunction: function (callback) {
-        chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
-            if (!/^chrome/.test(tabs[0].url)) {
-                chrome.tabs.executeScript(tabs[0].id, {file: "js/consentNimbus.js"}, function () {
-                    callback(tabs[0]);
-                });
-            } else {
-                callback(false);
-            }
-        });
-    },
-
-    detectOS: function () {
-//        return /Win||Linux/.test(window.navigator.platform) && !/CrOS/.test(window.navigator.userAgent);
-        return screenshot.enableNpapi;
-    },
-
     createMenu: function () {
-        if (localStorage.showContentMenu == 'false') {
-            chrome.contextMenus.removeAll(function () {
-                console.log('remove menu', arguments)
-            })
+        if (localStorage.showContentMenu === 'false') {
+            chrome.contextMenus.removeAll()
         } else {
-            var button_root = chrome.contextMenus.create({
+            let button_root = chrome.contextMenus.create({
                 "title": chrome.i18n.getMessage("appNameMini"),
                 "contexts": ["all"]
             });
@@ -379,67 +160,56 @@ var screenshot = {
                 title: chrome.i18n.getMessage("btnVisiblePage"),
                 contexts: ["all"],
                 parentId: button_root,
-                onclick: function () {
-                    screenshot.captureVisible()
-                }
+                onclick: screenshot.captureVisible.bind(screenshot)
             });
 
             chrome.contextMenus.create({
                 title: chrome.i18n.getMessage("btnCaptureFragment"),
                 contexts: ["all"],
                 parentId: button_root,
-                onclick: function () {
-                    screenshot.captureFragment()
-                }
+                onclick: screenshot.captureFragment.bind(screenshot)
             });
 
             chrome.contextMenus.create({
                 title: chrome.i18n.getMessage("btnSelectedArea"),
                 contexts: ["all"],
                 parentId: button_root,
-                onclick: function () {
-                    screenshot.captureSelected()
-                }
+                onclick: screenshot.captureSelected.bind(screenshot)
             });
 
             chrome.contextMenus.create({
                 title: chrome.i18n.getMessage("btnSelectedScroll"),
                 contexts: ["all"],
                 parentId: button_root,
-                onclick: function () {
-                    screenshot.scrollSelected()
-                }
+                onclick: screenshot.scrollSelected.bind(screenshot)
             });
 
             chrome.contextMenus.create({
                 title: chrome.i18n.getMessage("btnEntirePage"),
                 contexts: ["all"],
                 parentId: button_root,
-                onclick: function () {
-                    screenshot.captureEntire()
-                }
+                onclick: screenshot.captureEntire.bind(screenshot)
             });
+            if (window.core.is_chrome) {
+                chrome.contextMenus.create({
+                    title: chrome.i18n.getMessage("btnBrowserWindow"),
+                    contexts: ["all"],
+                    parentId: button_root,
+                    onclick: screenshot.captureWindow.bind(screenshot)
+                });
 
-            chrome.contextMenus.create({
-                title: chrome.i18n.getMessage("btnBrowserWindow"),
-                contexts: ["all"],
-                parentId: button_root,
-                onclick: function () {
-                    screenshot.captureWindow()
-                }
-            });
-
-            screenshot.button_video = chrome.contextMenus.create({
-                title: chrome.i18n.getMessage("btnCaptureVideo"),
-                contexts: ["all"],
-                parentId: button_root,
-                onclick: function () {
-                    videoRecorder.capture({
-                        type: 'tab',
-                        countdown: localStorage.videoCountdown
-                    });
-                }
-            });
+                screenshot.button_video = chrome.contextMenus.create({
+                    title: chrome.i18n.getMessage("btnCaptureVideo"),
+                    contexts: ["all"],
+                    parentId: button_root,
+                    onclick: function () {
+                        videoRecorder.capture({
+                            type: 'tab',
+                            countdown: localStorage.videoCountdown
+                        }).bind(videoRecorder);
+                    }
+                });
+            }
 
             chrome.contextMenus.create({
                 title: "separator",
@@ -459,13 +229,11 @@ var screenshot = {
         }
     },
     changeVideoButton: function () {
-        if (localStorage.showContentMenu == 'true') {
+        if (localStorage.showContentMenu === 'true') {
             if (screenshot.videoRecorder.getStatus()) {
                 chrome.contextMenus.update(screenshot.button_video, {
                     title: chrome.i18n.getMessage("optionsLabelStopVideo"),
-                    onclick: function () {
-                        videoRecorder.stopRecord()
-                    }
+                    onclick: videoRecorder.stopRecord
                 })
             } else {
                 chrome.contextMenus.update(screenshot.button_video, {
@@ -481,59 +249,36 @@ var screenshot = {
         }
     },
     openPage: function (url) {
-        chrome.tabs.create({url: url}, function (tab) {
-        });
+        chrome.tabs.create({url: url});
     },
     captureEntire: function () {
-        var screencanvas = {};
-        var tab;
-
-        function sendScrollMessage(tab) {
-            screenshot.newwholepage = true;
-            screencanvas = {};
-
-            if (scrollToCrop == true) {
-                chrome.tabs.sendRequest(tab.id, {
-                    msg: 'scrollPage',
-                    'scrollToCrop': true,
-                    'hideFixedElements': (localStorage.hideFixedElements === 'true'),
-                    'xs': xs,
-                    'ys': ys,
-                    'ws': ws,
-                    'hs': hs
-                });
-            } else {
-                chrome.tabs.sendRequest(tab.id, {
-                    msg: 'scrollPage',
-                    'scrollToCrop': false,
-                    'hideFixedElements': (localStorage.hideFixedElements === 'true')
-                });
-            }
-        }
-
+        let screencanvas = {};
+        screenshot.newwholepage = true;
         if (!screenshot.generated) {
             screenshot.generated = true;
-            chrome.extension.onRequest.addListener(function (request, sender, callback) {
-                var fn = {'capturePage': capturePage, 'openPage': openPage}[request.msg];
-                if (fn) {
-                    fn(request, sender, callback);
-                }
+            chrome.runtime.onMessage.addListener(function (request, sender, callback) {
+                let fn = {'capture_page': capturePage, 'capture_page_open': openPage}[request.operation];
+                if (fn) fn(request, sender, callback);
+                return true;
             });
         }
 
         function capturePage(data, sender, callback) {
-            var canvas;
+            let canvas;
+            let z = data.z;
             if (screenshot.newwholepage) {
                 screenshot.newwholepage = false;
                 canvas = document.createElement('canvas');
-                var maxSize = 32767;
-                var maxArea = 268435456;
-                var width = Math.round(Math.min(data.totalWidth, maxSize)) * data.ratio;
-                var height = Math.round(Math.min(data.totalHeight, maxSize)) * data.ratio;
-                if (!data.scrollToCrop) {
-                    width -= data.hasVScroll ? data.scrollWidth : 0;
-                    height -= data.hasHScroll ? data.scrollWidth : 0;
+                let maxSize = 32767;
+                let maxArea = 268435456;
+                let width = Math.ceil(Math.min(data.totalWidth * z, maxSize));
+                let height = Math.ceil(Math.min(data.totalHeight * z, maxSize));
+                if (!data.scroll_crop) {
+                    width -= data.hasVScroll ? data.scrollWidth * z : 0;
+                    height -= data.hasHScroll ? data.scrollWidth * z : 0;
                 }
+                console.log(width, height)
+
                 if (width * height < maxArea) {
                     canvas.width = width;
                     canvas.height = height;
@@ -545,31 +290,34 @@ var screenshot = {
                 screencanvas.ctx = canvas.getContext('2d');
             }
 
-            chrome.tabs.captureVisibleTab(null, {format: localStorage.format, quality: 100}, function (dataURI) {
-                console.log('captureVisibleTab', data);
-                var image = new Image();
-                var x = 0;
-                var y = Math.round(data.elem ? (data.h < data.elem.h ? (data.elem.y + (data.elem.h - data.h)) : data.elem.y) : 0) * data.ratio;
-                var w = Math.round(data.w) * data.ratio - (data.hasVScroll ? data.scrollWidth : 0);
-                var h = Math.round(data.h) * data.ratio - (data.hasHScroll ? data.scrollWidth : 0);
-                var x2 = Math.round(data.scrollLeft % data.x > 0 ? data.scrollLeft : data.x) * data.ratio;
-                var y2 = Math.round(data.elem ? (data.y + data.elem.y) : data.y) * data.ratio;
-                var w2 = w;
-                var h2 = h;
-                image.onload = function (cb) {
-                    if (data.scrollToCrop) {
-                        x = Math.round(data.x) * data.ratio;
-                        y = Math.round(data.y_shift) * data.ratio;
-                        w = Math.round(data.w) * data.ratio;
-                        h = Math.round(data.h) * data.ratio;
+            chrome.tabs.captureVisibleTab(null, {
+                format: localStorage.format === 'jpg' ? 'jpeg' : 'png',
+                quality: 100
+            }, function (dataURI) {
+                let image = new Image();
+                let x = 0;
+                let y = Math.ceil(data.elem ? (data.h < data.elem.h ? (data.elem.y + (data.elem.h - data.h)) : data.elem.y) : 0) * z;
+                let w = Math.ceil(data.w * z) - Math.ceil((data.hasVScroll ? data.scrollWidth : 0) * z);
+                let h = Math.ceil(data.h * z) - Math.ceil((data.hasHScroll ? data.scrollWidth : 0) * z);
+                let x2 = Math.ceil(data.scrollLeft % data.x > 0 ? data.scrollLeft : data.x) * z;
+                let y2 = Math.ceil(data.elem ? (data.y + data.elem.y) : data.y) * z;
+                let w2 = w;
+                let h2 = h;
+                image.onload = function () {
+                    if (data.scroll_crop) {
+                        x = Math.ceil(data.x * z);
+                        y = Math.ceil(data.y_shift * z);
+                        w = Math.ceil(data.w * z);
                         x2 = 0;
-                        y2 = Math.round(data.y_crop) * data.ratio;
-                        w2 = Math.round(data.w) * data.ratio;
-                        h2 = Math.round(data.h) * data.ratio;
+                        y2 = Math.ceil(data.y_crop * z);
+                        w2 = w;
+                        // h2 = Math.ceil(data.h) * z;
                     }
 
-                    w = image.naturalWidth < w ? image.naturalWidth : w;
-                    h = image.naturalHeight < h ? image.naturalHeight : h;
+                    // w = image.naturalWidth < w ? image.naturalWidth : w;
+                    // h = image.naturalHeight < h ? image.naturalHeight : h;
+                    console.log(image.naturalWidth, w, image.naturalHeight, h);
+                    console.log(data, x, y, w, h, x2, y2, w2, h2);
 
                     screencanvas.ctx.drawImage(image, x, y, w, h, x2, y2, w2, h2);
                     callback(true);
@@ -578,90 +326,172 @@ var screenshot = {
             });
         }
 
-        function openPage(data) {
-            if (scrollToCrop == true) {
-                scrollToCrop = false;
-            }
+        function openPage() {
+            if (scroll_crop === true) scroll_crop = false;
 
-            var name = Date.now() + 'screencapture.' + localStorage.format;
-            if (localStorage.keepOriginalResolution == 'true') {
-                screencanvas.canvas = downScaleCanvas(screencanvas.canvas, data.zoom);
-            }
-            var imgdata = screencanvas.canvas.toDataURL('image/' + localStorage.format, localStorage.imageQuality / 100);
+            screencanvas.canvas = window.core.scaleCanvas(screencanvas.canvas);
 
-            // scaleCanvas(imgdata, data.ratio, function (canvas) {
-            // imgdata = canvas.toDataURL('image/' + localStorage.format, localStorage.imageQuality / 100);
-            screenshot.createBlob(imgdata, name, function () {
-                localStorage.imgdata = screenshot.path + name;
-
-                if (saveScroll) {
-                    saveScroll = false;
-                    pathImg = localStorage.imgdata;
-                    screenshot.setScreenName(function (pageinfo) {
-                        screenshot.download({
-                            url: pathImg,
-                            pageinfo: pageinfo
-                        });
+            screenshot.createBlob(screencanvas.canvas, function (path) {
+                if (save_scroll) {
+                    save_scroll = false;
+                    screenshot.setScreenName(function () {
+                        screenshot.download(path);
                     });
-                } else if (nimbus_open) {
-                    nimbus_open = false;
+                } else if (send_nimbus) {
+                    send_nimbus = false;
                     screenshot.createEditPage('nimbus');
-                } else if (slack_open) {
-                    slack_open = false;
+                } else if (send_slack) {
+                    send_slack = false;
                     screenshot.createEditPage('slack');
-                } else if (google_open) {
-                    google_open = false;
+                } else if (send_google) {
+                    send_google = false;
                     screenshot.createEditPage('google');
-                } else if (print_open) {
-                    print_open = false;
+                } else if (send_print) {
+                    send_print = false;
                     screenshot.createEditPage('print');
+                } else if (copy_to_clipboard) {
+                    copy_to_clipboard = false;
+                    let dataURL = screencanvas.canvas.toDataURL('image/' + (localStorage.format === 'jpg' ? 'jpeg' : 'png'), localStorage.imageQuality / 100);
+                    screenshot.copyToClipboard(dataURL);
                 } else {
                     screenshot.createEditPage();
                 }
             });
-            // });
         }
 
-        chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
-            tab = tabs[0];
-            chrome.tabs.executeScript(tab.id, {file: "js/clearCapture.js"}, function () {
-                chrome.tabs.executeScript(tab.id, {file: "js/page.js"}, function () {
-                    sendScrollMessage(tab);
+        window.core.executeFile(['js/clearCapture.js', 'js/content-core.js', 'var timeScrollEntirePage = ' + (localStorage.timeScrollEntirePage || 200) + ';', 'js/page.js'], function () {
+            screenshot.newwholepage = true;
+            screencanvas = {};
+
+            if (scroll_crop === true) {
+                window.core.sendMessage({
+                    operation: 'content_scroll_page',
+                    'scroll_crop': true,
+                    'hideFixedElements': (localStorage.hideFixedElements === 'true'),
+                    'xs': xs,
+                    'ys': ys,
+                    'ws': ws,
+                    'hs': hs
                 });
-            });
+            } else {
+                window.core.sendMessage({
+                    operation: 'content_scroll_page',
+                    'scroll_crop': false,
+                    'hideFixedElements': (localStorage.hideFixedElements === 'true')
+                })
+            }
         });
     },
     setScreenName: function (cb) {
-        localStorage.screenname = 'screenshot-by-nimbus';
-
         chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
-            var tab = tabs[0];
-            var info = {'url': tab.url, 'title': tab.title, 'time': getTimeStamp()};
+            let info = {'url': tabs[0].url, 'title': tabs[0].title, 'time': getTimeStamp()};
             localStorage.pageinfo = JSON.stringify(info);
-            localStorage.screenname = screenshot.getFileName(info);
-
-            if (typeof cb == 'function') cb(info);
+            cb && cb(info);
         });
-
     },
 
-    captureSelected: function () {
-        chrome.tabs.insertCSS(null, {file: "css/jquery.Jcrop.css"});
-        chrome.tabs.insertCSS(null, {file: "css/stylecrop.css"});
+    fragmentsData: [],
 
-        chrome.tabs.executeScript(null, {file: "js/jquery.js"}, function () {
-            chrome.tabs.executeScript(null, {file: "js/jquery.Jcrop.js"}, function () {
-                chrome.tabs.executeScript(null, {file: "js/crop.js"}, function () {
-                    chrome.tabs.captureVisibleTab(null, {format: localStorage.format, quality: 100}, function (img) {
-                        localStorage.imgdata = img;
+    loadFragments: function (cb) {
+        let self = this;
+        let load = function (i) {
+            let image = new Image();
+            image.onload = function () {
+                self.fragmentsData[i].image = image;
+                check(++i);
+            };
+            image.src = self.fragmentsData[i].src;
+        };
 
-                        chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
-                            var tab = tabs[0];
+        let check = function (i) {
+            if (self.fragmentsData[i] === undefined) cb();
+            else load(i);
+        };
+        check(0);
+    },
+    createFullFragment: function (position, z, cb) {
+        let self = this;
 
-                            chrome.tabs.sendRequest(tab.id, {msg: 'crop', image: img});
+        // let z = window.core.is_chrome ? window.devicePixelRatio : 1;
+
+        console.log(z);
+        this.loadFragments(function () {
+            let canvas = document.createElement('canvas');
+            let content = canvas.getContext("2d");
+            canvas.width = Math.round(position.w);
+            canvas.height = Math.round(position.h);
+
+            for (let i = 0, len = self.fragmentsData.length; i < len; i++) {
+                content.drawImage(
+                    self.fragmentsData[i].image,
+                    Math.round(position.x * z),
+                    0,
+                    Math.round(position.w * z),
+                    Math.round(self.fragmentsData[i].window_size.h * z),
+                    0,
+                    Math.round(self.fragmentsData[i].window_size.y - position.y),
+                    Math.round(position.w),
+                    Math.round(self.fragmentsData[i].window_size.h)
+                );
+            }
+
+            cb(canvas.toDataURL('image/' + (localStorage.format === 'jpg' ? 'jpeg' : 'png'), 100));
+        });
+    },
+    cropFragment: function (position, window_size, z) {
+        let self = this;
+        chrome.tabs.captureVisibleTab(null, {
+            format: localStorage.format === 'jpg' ? 'jpeg' : 'png',
+            quality: 100
+        }, function (dataUrl) {
+            if (window_size.y === position.y || self.fragmentsData.length || (position.y >= window_size.y && position.y + position.h <= window_size.y + window_size.h)) {
+                self.fragmentsData.push({window_size: window_size, src: dataUrl});
+            }
+
+            if (!self.fragmentsData.length && (position.y < window_size.y || position.y + position.h > window_size.y + window_size.h)) {
+                window.core.sendMessage({
+                    operation: 'content_fragment_scroll',
+                    position: position,
+                    window_size: window_size,
+                    scroll: {x: 0, y: position.y}
+                })
+            } else if (self.fragmentsData.length && position.y + position.h > window_size.y + window_size.h) {
+                window.core.sendMessage({
+                    operation: 'content_fragment_scroll',
+                    position: position,
+                    window_size: window_size,
+                    scroll: {x: 0, y: window_size.y + window_size.h}
+                })
+            } else {
+                self.createFullFragment(position, z, function (img) {
+                    window.core.imageToCanvas(img, function (canvas) {
+                        canvas = window.core.scaleCanvas(canvas);
+
+                        screenshot.createBlob(canvas, function () {
+                            window.core.sendMessage({
+                                operation: 'content_set_fragment_image',
+                                image: img,
+                                position: position,
+                                window_size: window_size
+                            })
                         });
                     });
                 });
+            }
+        })
+    },
+    captureFragment: function () {
+        this.fragmentsData = [];
+        window.core.executeFile(['css/fragment.css', 'css/crop.css', 'js/jquery.js', 'js/jquery.Jcrop.js', 'js/content-core.js', 'js/content-fragment.js']);
+    },
+    captureSelected: function () {
+        window.core.executeFile(['css/jquery.Jcrop.css', 'css/crop.css', 'js/jquery.js', 'js/jquery.Jcrop.js', 'js/content-core.js', 'js/content-crop.js'], function () {
+            chrome.tabs.captureVisibleTab(null, {
+                format: localStorage.format === 'jpg' ? 'jpeg' : 'png',
+                quality: 100
+            }, function (dataUrl) {
+                localStorage.filePatch = dataUrl;
+                window.core.sendMessage({operation: 'capture_selected', image: dataUrl})
             });
         });
     },
@@ -671,305 +501,113 @@ var screenshot = {
     },
 
     scrollSelected: function () {
-        chrome.tabs.insertCSS(null, {file: "css/jquery.Jcrop.css"});
-        chrome.tabs.insertCSS(null, {file: "css/stylecrop.css"});
-
-        chrome.tabs.executeScript(null, {file: "js/jquery.js"}, function () {
-            chrome.tabs.executeScript(null, {file: "js/jquery.Jcrop.js"}, function () {
-                chrome.tabs.executeScript(null, {file: "js/clearCapture.js"}, function () {
-                    chrome.tabs.executeScript(null, {file: "js/scrollCrop.js"}, function () {
-                    })
-                })
-            })
-        })
+        window.core.executeFile(['css/jquery.Jcrop.css', 'css/crop.css', 'js/jquery.js', 'js/jquery.Jcrop.js', 'js/content-core.js', 'js/clearCapture.js', 'js/content-scroll-crop.js']);
     },
+    captureVisible: function () {
+        window.core.executeFile(["js/content-scrollbar.js"], function () {
+            window.core.sendMessage({operation: 'get_scrollbar_data'}, function (response) {
+                chrome.tabs.captureVisibleTab(null, {
+                    format: localStorage.format === 'jpg' ? 'jpeg' : 'png',
+                    quality: 100
+                }, function (dataURL) {
+                    let image = new Image();
+                    image.onload = function () {
+                        let canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
 
-    fragmentsData: [],
+                        canvas.width = image.naturalWidth - (response.hasVScroll ? response.scrollWidth : 0);
+                        canvas.height = image.naturalHeight - (response.hasHScroll ? response.scrollWidth : 0);
+                        ctx.drawImage(image, 0, 0);
 
-    loadFragments: function (cb, tab_id) {
-        var self = this;
-        var load = function (i) {
-            var image = new Image();
-            image.onload = function () {
-                self.fragmentsData[i].image = image;
-                check(++i);
-            };
-            image.src = self.fragmentsData[i].src;
-        };
+                        canvas = window.core.scaleCanvas(canvas);
 
-        var check = function (i) {
-            if (self.fragmentsData[i] == undefined) {
-                cb();
-            } else {
-                load(i);
-            }
-        };
-        check(0);
-    },
-    createFullFragment: function (position, zoom, cb, tab_id) {
-        var self = this;
-
-        this.loadFragments(function () {
-            var canvas = document.createElement('canvas');
-            var content = canvas.getContext("2d");
-            canvas.width = Math.round(position.w * zoom);
-            canvas.height = Math.round(position.h * zoom);
-            content.scale(zoom, zoom);
-
-            for (var i = 0, len = self.fragmentsData.length; i < len; i++) {
-                content.drawImage(
-                    self.fragmentsData[i].image,
-                    Math.round(position.x * zoom),
-                    0,
-                    Math.round(position.w * zoom),
-                    Math.round(self.fragmentsData[i].window_size.h * zoom),
-                    0,
-                    Math.round(self.fragmentsData[i].window_size.y - position.y),
-                    Math.round(position.w),
-                    Math.round(self.fragmentsData[i].window_size.h)
-                );
-            }
-
-            cb(canvas.toDataURL('image/' + localStorage.format, localStorage.imageQuality / 100));
-        }, tab_id);
-    },
-    cropFragment: function (position, window_size, zoom) {
-        var self = this;
-        chrome.tabs.captureVisibleTab(null, {format: localStorage.format, quality: 100}, function (fragment_data) {
-            chrome.tabs.query({active: true/*, lastFocusedWindow: true*/}, function (tabs) {
-                var tab = tabs[0];
-
-                if (window_size.y === position.y ||
-                    self.fragmentsData.length ||
-                    (position.y >= window_size.y && position.y + position.h <= window_size.y + window_size.h)) {
-
-                    self.fragmentsData.push({window_size: window_size, src: fragment_data});
-                }
-
-                if (!self.fragmentsData.length &&
-                    (position.y < window_size.y || position.y + position.h > window_size.y + window_size.h)) {
-                    chrome.tabs.sendMessage(tab.id, {
-                        msg: 'capture_fragment_scroll',
-                        position: position,
-                        window_size: window_size,
-                        scroll: {
-                            x: 0,
-                            y: position.y
-                        }
-                    });
-                } else if (self.fragmentsData.length &&
-                    position.y + position.h > window_size.y + window_size.h) {
-                    chrome.tabs.sendMessage(tab.id, {
-                        msg: 'capture_fragment_scroll',
-                        position: position,
-                        window_size: window_size,
-                        scroll: {
-                            x: 0,
-                            y: window_size.y + window_size.h
-                        }
-                    });
-                } else {
-                    self.createFullFragment(position, zoom, function (img) {
-                        var image = new Image();
-                        image.onload = function () {
-                            var canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
-                            var name = Date.now() + 'screencapture.' + localStorage.format;
-                            canvas.width = image.naturalWidth;
-                            canvas.height = image.naturalHeight;
-                            ctx.drawImage(image, 0, 0);
-                            if (localStorage.keepOriginalResolution == 'true') {
-                                canvas = downScaleCanvas(canvas, 1 / (window.devicePixelRatio || 1));
-                            }
-                            img = canvas.toDataURL('image/' + localStorage.format, localStorage.imageQuality / 100);
-                            screenshot.createBlob(img, name, function () {
-                                localStorage.imgdata = screenshot.path + name;
-                                chrome.tabs.sendMessage(tab.id, {
-                                    msg: 'capture_fragment_set_image',
-                                    image: img,
-                                    position: position,
-                                    window_size: window_size
-                                });
-                            });
-                        };
-                        image.src = img;
-
-                    }, tab.id);
-                }
-            })
-        })
-    },
-    captureFragment: function () {
-        this.fragmentsData = [];
-
-        chrome.tabs.insertCSS(null, {file: "css/fragment.css"});
-        chrome.tabs.insertCSS(null, {file: "css/stylecrop.css"});
-
-        chrome.tabs.executeScript(null, {file: "js/jquery.js"}, function () {
-            chrome.tabs.executeScript(null, {file: "js/jquery.Jcrop.js"}, function () {
-                chrome.tabs.executeScript(null, {file: "js/fragment.js"}, function () {
-
-                    chrome.tabs.query({active: true/*, lastFocusedWindow: true*/}, function (tabs) {
-                        var tab = tabs[0];
-                        chrome.tabs.sendMessage(tab.id, {msg: 'capture_fragment_init'});
-                    });
-
+                        screenshot.createBlob(canvas, function () {
+                            screenshot.createEditPage();
+                        });
+                    };
+                    image.src = dataURL;
                 });
             });
         });
     },
-    captureVisible: function () {
-        chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
-            var tab = tabs[0];
-            chrome.tabs.executeScript(tab.id, {file: "js/visible.js"}, function () {
-                window.setTimeout(function () {
-
-                    chrome.tabs.captureVisibleTab(null, {format: localStorage.format, quality: 100}, function (img) {
-                        chrome.tabs.sendMessage(tab.id, {msg: 'restore_overflow'});
-
-                        var image = new Image();
-                        image.onload = function () {
-                            var canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
-                            var name = Date.now() + 'screencapture.' + localStorage.format;
-                            canvas.width = image.naturalWidth;
-                            canvas.height = image.naturalHeight;
-                            ctx.drawImage(image, 0, 0);
-                            if (localStorage.keepOriginalResolution == 'true') {
-                                canvas = downScaleCanvas(canvas, 1 / (window.devicePixelRatio || 1));
-                            }
-                            img = canvas.toDataURL('image/' + localStorage.format, localStorage.imageQuality / 100);
-                            screenshot.createBlob(img, name, function () {
-                                localStorage.imgdata = screenshot.path + name;
-                                screenshot.createEditPage();
-                            });
-                        };
-                        image.src = img;
-                    });
-
-                }, 100);
+    captureWindow: function () {
+        screenshot.captureDesktop(function (canvas) {
+            screenshot.createBlob(canvas, function () {
+                screenshot.createEditPage();
             });
         });
     },
-    captureWindow: function () {
-        screenshot.captureDesctop(function (img) {
-            localStorage.imgdata = img;
-            screenshot.createEditPage();
-        });
-    },
-    captureDesctop: function (cb) {
+    captureDesktop: function (cb) {
         chrome.desktopCapture.chooseDesktopMedia(['screen', 'window'], function (streamId) {
-            function success_handler(stream) {
-                var v = document.createElement('video');
-                v.addEventListener('canplay', function () {
-                    var canvas = document.createElement('canvas');
-                    var ctx = canvas.getContext('2d');
-
-                    canvas.width = v.videoWidth;
-                    canvas.height = v.videoHeight;
-
-                    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-                    v.pause();
-                    v.src = '';
-                    stream.getTracks()[0].stop();
-                    v.remove();
-                    canvas.remove();
-
-                    setTimeout(function () {
-                        cb && cb(canvas.toDataURL());
-                    }, 500);
-
-                }, false);
-                v.src = window.URL.createObjectURL(stream);
-            }
-
-            function failure_handler(error) {
-                console.log(error);
-            }
-
-            if (streamId) {
-                var obj = {
-                    audio: false,
-                    video: {
-                        mandatory: {
-                            chromeMediaSource: "desktop",
-                            chromeMediaSourceId: streamId,
-                            maxWidth: 2560,
-                            maxHeight: 1440
-                        }
+            window.navigator.webkitGetUserMedia({
+                audio: false,
+                video: {
+                    mandatory: {
+                        chromeMediaSource: "desktop",
+                        chromeMediaSourceId: streamId,
+                        maxWidth: 4000,
+                        maxHeight: 4000
                     }
-                };
-                window.navigator.webkitGetUserMedia(obj, success_handler, failure_handler);
-            }
+                }
+            }, function (stream) {
+                let video = document.createElement('video');
+                video.addEventListener('loadedmetadata', function () {
+                    let canvas = document.createElement('canvas');
+                    let ctx = canvas.getContext("2d");
+                    canvas.width = this.videoWidth;
+                    canvas.height = this.videoHeight;
+                    ctx.drawImage(this, 0, 0);
+
+                    stream.getTracks()[0].stop();
+                    this.pause();
+                    this.remove();
+                    canvas.remove();
+                    cb && cb(canvas);
+                }, false);
+                try {
+                    video.srcObject = stream;
+                } catch (error) {
+                    video.src = window.URL.createObjectURL(stream);
+                }
+                video.play();
+            }, function (err) {
+                console.log(err);
+            });
         });
     },
-//    captureScreenCallback: function (data) {
-//        screenshot.createBlob("data:image/bmp;base64," + data, 'screencapture.' + localStorage.format, function () {
-//            localStorage.imgdata = screenshot.path + 'screencapture.' + localStorage.format;
-//            screenshot.createEditPage();
-//        });
-//    },
-    createBlob: function (dataURI, name, callback) {
-        // screenshot.imgData = dataURI;
-        var byteString = atob(dataURI.split(',')[1]);
-        var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
-        var ab = new ArrayBuffer(byteString.length);
-        var ia = new Uint8Array(ab);
-        for (var i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-        }
-
-        var blob = new Blob([ab], {type: mimeString});
-
-        function onwriteend() {
-            // window.open(screenshot.path + name);
-            if (callback) callback(blob.size);
-        }
-
-        function errorHandler() {
-            console.log('uh-oh', arguments);
-        }
-
-        window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-        window.requestFileSystem(
-            window.TEMPORARY, 200 * 1024 * 1024, function (fs) {
-                fs.root.getFile(name, {create: true}, function (fileEntry) {
-                    fileEntry.createWriter(function (fileWriter) {
-                        fileWriter.onerror = errorHandler;
-                        fileWriter.onwriteend = onwriteend;
-                        fileWriter.write(blob);
-                    }, errorHandler);
-                }, errorHandler);
-            }, errorHandler);
+    createBlob: function (canvas, callback) {
+        canvas.toBlob(function (blob) {
+            let patch = localStorage.filePatch = (window.URL || window.webkitURL).createObjectURL(blob);
+            if (callback) callback(patch, blob);
+        }, 'image/' + (localStorage.format === 'jpg' ? 'jpeg' : 'png'), localStorage.imageQuality / 100);
     },
     createBlank: function () {
-        var canvas = document.createElement('canvas');
-        canvas.width = 1000;
-        canvas.height = 500;
-        var ctx = canvas.getContext('2d');
+        let canvas = document.createElement('canvas');
+        canvas.width = screen.width - 100;
+        canvas.height = screen.height - 200;
+        let ctx = canvas.getContext('2d');
         ctx.fillStyle = "#FFF";
-        ctx.fillRect(0, 0, 1000, 500);
-        localStorage.imgdata = canvas.toDataURL();
-        screenshot.createEditPage('blank');
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        screenshot.createBlob(canvas, function () {
+            screenshot.createEditPage('blank');
+        });
     },
     createEditPage: function (params) {
-        console.log(arguments);
-        var option = params || localStorage.enableEdit;
+        let option = params || localStorage.enableEdit;
         switch (option) {
             case 'copy':
-                screenshot.copyToClipboard(localStorage.imgdata);
+                screenshot.copyToClipboard(localStorage.filePatch);
                 break;
             case 'save':
-                screenshot.setScreenName(function (pageinfo) {
-                    screenshot.download({
-                        url: localStorage.imgdata,
-                        pageinfo: pageinfo
-                    });
+                screenshot.setScreenName(function () {
+                    screenshot.download(localStorage.filePatch);
                 });
                 break;
             case 'edit':
             case 'done':
             default:
-                screenshot.setScreenName();
-                chrome.tabs.create({url: 'edit.html' + ((option == 'edit' || !option) ? '' : ('?' + option))});
+                screenshot.setScreenName(function () {
+                    chrome.tabs.create({url: 'edit.html' + ((option === 'edit' || !option) ? '' : ('?' + option))});
+                });
                 break;
         }
     },
@@ -978,14 +616,11 @@ var screenshot = {
             access_token: null
         },
         requestToApi: function (action, param, cb) {
-            var xhr = new XMLHttpRequest();
+            let xhr = new XMLHttpRequest();
             xhr.onload = function () {
-                if (xhr.readyState != 4) return;
-
-//                    console.log('req.status', xhr.status);
-                if (xhr.status == 200) {
-                    var res = JSON.parse(xhr.responseText);
-//                        console.log('response', res);
+                if (xhr.readyState !== 4) return;
+                if (xhr.status === 200) {
+                    let res = JSON.parse(xhr.responseText);
                     cb && cb(null, res)
                 } else {
                     cb && cb(true, null)
@@ -998,20 +633,18 @@ var screenshot = {
             xhr.send();
         },
         sendData: function () {
-//                console.log(screenshot.slack.oauth.access_token);
             if (screenshot.slack.oauth.access_token) {
                 screenshot.slack.requestToApi('channels.list', 'token=' + screenshot.slack.oauth.access_token, function (err, channels) {
                     screenshot.slack.requestToApi('users.list', 'token=' + screenshot.slack.oauth.access_token, function (err, users) {
                         chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
-                            var tab = tabs[0];
-//                                console.log(tab);
-                            chrome.tabs.sendRequest(tab.id, {
+                            let tab = tabs[0];
+                            chrome.tabs.sendMessage(tab.id, {
                                 action: 'slack_auth',
                                 oauth: screenshot.slack.oauth,
                                 channels: channels.channels,
                                 users: users.members,
                                 settings: {
-                                    panel: ((localStorage.slackPanel == undefined || localStorage.slackPanel === 'true') ? true : false),
+                                    panel: localStorage.slackPanel === 'true',
                                     channel: localStorage.slackChannel || null
                                 }
                             });
@@ -1020,108 +653,126 @@ var screenshot = {
                 })
             }
         },
-        oauthAccess: function () {
-            // chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-            //
-            // });
-        },
         init: function () {
-//                screenshot.slack.oauth.access_token = "xoxp-36528459077-36538995330-36528650757-30b9c11c65";
-
             if (localStorage.slackToken) {
                 screenshot.slack.oauth.access_token = localStorage.slackToken;
             }
-
-//                chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-//                    if (changeInfo.status == "complete") {
-////                        console.log(tab);
-//                        screenshot.slack.sendData();
-//                    }
-//                });
-
-            // screenshot.slack.oauthAccess();
         }
     },
     init: function () {
+        if (window.core.is_chrome) {
+            screenshot.videoRecorder = videoRecorder;
+        }
+
         screenshot.createMenu();
         screenshot.slack.init();
     },
-    copyToClipboard: function (img) {
-        // var text = chrome.i18n.getMessage("notificationCopy");
-        // if (!screenshot.enableNpapi || !plugin.saveToClipboard(img)) {
-        //     text = chrome.i18n.getMessage("notificationWrong");
-        // }
-        //
-        // var notification = webkitNotifications.createNotification('favicon.png', chrome.i18n.getMessage("appName"), text);
-        // notification.show();
-        // window.setTimeout(function() {
-        //     notification.cancel();
-        // }, 5000);
-    },
-//    convertBase64To: function (data, cb) {
-//        if (localStorage.format == 'png') {
-//            cb(data);
-//        } else {
-//            var img = new Image();
-//            img.onload = function () {
-//                var canvas = document.createElement('canvas');
-//                canvas.width = img.width;
-//                canvas.height = img.height;
-//                var ctx = canvas.getContext('2d');
-//                ctx.drawImage(img, 0, 0, img.width, img.height);
-////                    var fonData = ctx.getImageData(0, 0, img.width, img.height);
-//                var dataurl = canvas.toDataURL('image/' + localStorage.format, localStorage.imageQuality / 100);
-//                cb && cb(dataurl);
-//            };
-//            img.src = data;
-//        }
-//    },
-    download: function (data) {
-        //TODO bug in Chrome 35 on Ubuntu
-        if (/Linux/.test(window.navigator.platform) && /Chrome\/35/.test(window.navigator.userAgent)) {
-            localStorage.enableSaveAs = 'false';
-        }
-        chrome.downloads.download({
-            url: data.url,
-            filename: screenshot.getFileName(data.pageinfo, true),
-            saveAs: (localStorage.enableSaveAs !== 'false')
-        }, function (downloadId) {
-            function errorHandler() {
-                console.log(arguments);
-            }
+    setWaterMark: function (canvas, cb) {
+        core.checkWaterMark(function (check) {
+            nimbusShare.checkPremium(function (err, premium) {
+                console.log('check', check, 'premium', premium);
+                if (err || !premium.capture) return cb && cb(canvas);
 
-            window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
-            window.requestFileSystem(window.TEMPORARY, 200 * 1024 * 1024, function (fs) {
-                fs.root.getFile('screencapture.' + localStorage.format, {create: true}, function (fileEntry) {
-                    fileEntry.remove(function () {
-                        console.log('File removed.');
-                    }, errorHandler);
-                }, errorHandler);
-            }, errorHandler);
+                if (!check) return cb && cb(canvas);
+
+                core.getWaterMark(function (watermark) {
+                    let x, y, shift = 10;
+                    switch (localStorage.positionWatermark) {
+                        case 'lt':
+                            x = shift;
+                            y = shift;
+                            break;
+                        case 'rt':
+                            x = canvas.width - watermark.width - shift;
+                            y = shift;
+                            break;
+                        case 'lb':
+                            x = shift;
+                            y = canvas.height - watermark.height - shift;
+                            break;
+                        case 'rb':
+                            x = canvas.width - watermark.width - shift;
+                            y = canvas.height - watermark.height - shift;
+                            break;
+                        case 'c':
+                            x = Math.floor((canvas.width - watermark.width) / 2);
+                            y = Math.floor((canvas.height - watermark.height) / 2);
+                            break;
+                    }
+
+                    canvas.getContext('2d').drawImage(watermark, x, y, watermark.width, watermark.height);
+
+                    return cb && cb(canvas);
+                });
+            })
+        })
+    },
+    copyToClipboard: function (dataURL) {
+        if (!window.core.is_firefox) return false;
+        window.core.dataUrlToArrayBuffer(dataURL, function (buffer) {
+            chrome.clipboard.setImageData(buffer, (localStorage.format === 'jpg' ? 'jpeg' : 'png'));
+
+            chrome.notifications.create(null, {
+                    type: 'basic',
+                    iconUrl: 'images/icons/48x48.png',
+                    title: chrome.i18n.getMessage("appName"),
+                    message: chrome.i18n.getMessage("notificationCopy")
+                },
+                function (notificationId) {
+                    window.setTimeout(function (id) {
+                        chrome.notifications.clear(id)
+                    }.bind(this, notificationId), 3000);
+                });
         });
     },
-    getFileName: function (pageinfo, format) {
-        var s = localStorage.fileNamePattern;
-        var f = localStorage.format;
-        if (typeof pageinfo == 'object') {
-            var url = document.createElement('a');
-            url.href = pageinfo.url || '';
-            s = s.replace(/\{url}/, pageinfo.url || '')
-                .replace(/\{title}/, pageinfo.title || '')
-                .replace(/\{domain}/, url.host || '')
-                .replace(/\{date}/, pageinfo.time.split(' ')[0] || '')
-                .replace(/\{time}/, pageinfo.time.split(' ')[1] || '')
-                .replace(/\{ms}/, pageinfo.time.split(' ')[2] || '')
-                .replace(/\{timestamp}/, pageinfo.time.split(' ')[3] || '');
+    download: function (dataURL) {
+        let canvas = document.createElement('canvas');
+        let screen = new Image();
+        screen.onload = function () {
+            canvas.width = screen.width;
+            canvas.height = screen.height;
 
-        }
-        return s.replace(/[\*\|\\\:\"\<\>\?\/#]+/ig, '-') + (format ? ('.' + f) : '');
+            canvas.getContext('2d').drawImage(screen, 0, 0);
+            screenshot.setWaterMark(canvas, function (c) {
+                let data_url = c.toDataURL('image/' + (localStorage.format === 'jpg' ? 'jpeg' : 'png'), localStorage.imageQuality / 100);
+                if (window.is_firefox) {
+                    chrome.downloads.download({
+                        url: window.URL.createObjectURL(core.dataURLtoBlob(data_url)),
+                        filename: screenshot.getFileName(),
+                        saveAs: localStorage.enableSaveAs !== 'false'
+                    })
+                } else {
+                    chrome.downloads.download({
+                        url: data_url,
+                        filename: screenshot.getFileName(),
+                        saveAs: localStorage.enableSaveAs !== 'false'
+                    });
+                }
+            });
+        };
+        screen.src = dataURL || localStorage.filePatch;
+    },
+    getFileName: function () {
+        let s = localStorage.fileNamePatternScreenshot;
+        let f = localStorage.format;
+        let info = JSON.parse(localStorage.pageinfo);
+        let url = document.createElement('a');
+        url.href = info.url || '';
+        s = s.replace(/\{url}/, info.url || '')
+            .replace(/\{title}/, info.title || '')
+            .replace(/\{domain}/, url.host || '')
+            .replace(/\{date}/, info.time.split(' ')[0] || '')
+            .replace(/\{time}/, info.time.split(' ')[1] || '')
+            .replace(/\{ms}/, info.time.split(' ')[2] || '')
+            .replace(/\{timestamp}/, info.time.split(' ')[3] || '');
+
+        return s.replace(/[\*\|\\\:\"\<\>\?\/#]+/ig, '-') + ('.' + f);
     }
 };
 
 function getTimeStamp() {
-    var y, m, d, h, M, s, mm, timestamp;
-    var time = new Date();
+    let y, m, d, h, M, s, mm, timestamp;
+    let time = new Date();
     y = time.getFullYear();
     m = time.getMonth() + 1;
     d = time.getDate();
@@ -1140,275 +791,349 @@ function getTimeStamp() {
     return y + '.' + m + '.' + d + ' ' + h + ':' + M + ':' + s + ' ' + mm + ' ' + timestamp;
 }
 
-chrome.extension.onMessage.addListener(function (request, sender, sendResponse) {
-    if (request.msg == 'stop_timer') {
-        chrome.browserAction.setPopup({popup: 'popup.html'});
-        // screenshot.videoRecorder.stopRecord();
-    }
-    if (request.msg == 'end_timer') {
-        chrome.browserAction.setPopup({popup: 'popup.html'});
-        if (request.type === 'capture_delayed') {
-            screenshot.captureVisible();
-        } else if (request.type != undefined) {
-            screenshot.videoRecorder.capture({
-                type: request.type,
-                countdown: localStorage.videoCountdown,
-                not_timer: true
-            });
-        }
-    }
-    if (request.msg == 'cut') {
-        localStorage.imgdata = request.img;
-        screenshot.createEditPage();
-    } else if (request.msg == 'crop_fragment') {
-        console.log(request);
-        screenshot.cropFragment(request.position, request.window_size, request.zoom)
-    } else if (request.msg == 'save_fragment') {
-        pathImg = localStorage.imgdata;
-        screenshot.setScreenName(function (pageinfo) {
-            screenshot.download({
-                url: pathImg,
-                pageinfo: pageinfo
-            });
-        });
-    } else if (request.msg == 'save_image') {
-        screenshot.setScreenName(function (pageinfo) {
-            screenshot.download({
-                url: request.data,
-                pageinfo: pageinfo
-            });
-        });
-    } else if (request.msg === 'openeditpagepage') {
-        screenshot.createEditPage();
-    } else if (request.msg === 'copytoclipboard') {
-        screenshot.copyToClipboard(request.img)
-    } else if (request.msg === 'send_to_nimbus') {
-        localStorage.imgdata = request.img;
-        screenshot.createEditPage('nimbus');
-    } else if (request.msg === 'send_to_slack') {
-        localStorage.imgdata = request.img;
-        screenshot.createEditPage('slack');
-    } else if (request.msg === 'send_to_google') {
-        localStorage.imgdata = request.img;
-        screenshot.createEditPage('google');
-    } else if (request.msg === 'send_to_print') {
-        localStorage.imgdata = request.img;
-        screenshot.createEditPage('print');
-    } else if (request.msg === 'openpage') {
-        screenshot.openPage(request.url);
-    } else if (request.msg === 'getformat') {
-        sendResponse({
-            format: localStorage.format,
-            quality: localStorage.imageQuality
-        });
-    } else if (request.msg === 'saveCropPosition') {
-        localStorage.cropPosition = JSON.stringify(request.position);
-    } else if (request.msg === 'getCropPosition') {
-        if (localStorage.saveCropPosition === 'true') {
-            sendResponse(JSON.parse(localStorage.cropPosition));
-        }
-    } else if (request.msg === 'saveCropScrollPosition') {
-        localStorage.cropScrollPosition = JSON.stringify(request.position);
-    } else if (request.msg === 'getCropScrollPosition') {
-        var res = {};
-        if (localStorage.saveCropPosition === 'true') {
-            res = JSON.parse(localStorage.cropScrollPosition);
-        }
-        res.hideFixedElements = (localStorage.hideFixedElements === 'true');
-        sendResponse(res);
-    } else if (request.msg === 'get_file_name') {
-        request.pageinfo.time = getTimeStamp();
-        sendResponse(screenshot.getFileName(request.pageinfo));
-    } else if (request.msg === 'set_setting') {
-        localStorage[request.key] = request.value;
-    } else if (request.msg === 'get_setting') {
-        sendResponse(localStorage[request.key]);
-    } else if (request.msg === 'slack_logout') {
-        screenshot.slack.oauth.access_token = null;
-        localStorage.slackToken = null;
-    } else if (request.msg === 'enable_save_as') {
-        sendResponse(localStorage.enableSaveAs);
-    } else if (request.msg === 'get_slack_data') {
-        if (screenshot.slack.oauth.access_token) {
-            screenshot.slack.requestToApi('channels.list', 'token=' + screenshot.slack.oauth.access_token, function (err, channels) {
-                screenshot.slack.requestToApi('users.list', 'token=' + screenshot.slack.oauth.access_token, function (err, users) {
-                    sendResponse({
-                        action: 'slack_auth',
-                        oauth: screenshot.slack.oauth,
-                        channels: channels.channels,
-                        users: users.members,
-                        settings: {
-                            panel: ((localStorage.slackPanel == undefined || localStorage.slackPanel === 'true') ? true : false),
-                            channel: localStorage.slackChannel || null
-                        }
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+        console.log('request', request);
+
+        if (request.msg === 'slack_logout') {
+            screenshot.slack.oauth.access_token = null;
+            localStorage.slackToken = null;
+        } else if (request.msg === 'get_slack_data') {
+            if (screenshot.slack.oauth.access_token) {
+                screenshot.slack.requestToApi('channels.list', 'token=' + screenshot.slack.oauth.access_token, function (err, channels) {
+                    screenshot.slack.requestToApi('users.list', 'token=' + screenshot.slack.oauth.access_token, function (err, users) {
+                        sendResponse({
+                            action: 'slack_auth',
+                            oauth: screenshot.slack.oauth,
+                            channels: channels.channels,
+                            users: users.members,
+                            settings: {
+                                panel: localStorage.slackPanel === 'true',
+                                channel: localStorage.slackChannel || null
+                            }
+                        });
                     });
                 });
-            });
-            return true;
+                return true;
+            }
+        } else if (request.msg === 'oauth2_google') {
+            google_oauth.login()
+        } else if (request.msg === 'oauth2_google_refresh') {
+            google_oauth.refreshToken();
+        } else if (request.msg === 'oauth2_youtube') {
+            youtube_oauth.login()
+        } else if (request.msg === 'oauth2_youtube_refresh') {
+            youtube_oauth.refreshToken();
+        } else if (request.msg === 'update_menu') {
+            screenshot.createMenu();
         }
-    } else if (request.msg === 'oauth2_google') {
-        google_oauth.login()
-    } else if (request.msg === 'oauth2_google_refresh') {
-        google_oauth.refreshToken(
-            sendResponse()
-        );
-    } else if (request.msg === 'update_menu') {
-        screenshot.createMenu();
-    }
-    if (request.operation == 'status_video_change') {
-        switch (request.status) {
-            case 'play' :
-                if (screenshot.videoRecorder.getState() !== 'recording') {
-                    screenshot.videoRecorder.pauseRecord();
+
+        switch (request.operation) {
+            case 'set_screen':
+                let image = new Image();
+                image.onload = function () {
+                    let canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
+                    canvas.width = image.naturalWidth;
+                    canvas.height = image.naturalHeight;
+                    ctx.drawImage(image, 0, 0);
+
+                    canvas = window.core.scaleCanvas(canvas);
+                    localStorage.filePatch = canvas.toDataURL('image/' + (localStorage.format === 'jpg' ? 'jpeg' : 'png'), localStorage.imageQuality / 100)
+                };
+                image.src = request.dataUrl;
+                break;
+            case 'set_video_panel':
+                localStorage.deawingTools = request.value;
+                break;
+            case 'set_video_editor_tools':
+                localStorage.videoEditorTools = request.tools;
+                break;
+            case 'set_option':
+                localStorage[request.key] = request.value;
+                break;
+            case 'set_core_cap':
+                xs = request.xs;
+                ys = request.ys;
+                ws = request.ws;
+                hs = request.hs;
+                break;
+
+            case 'get_crop_position':
+                sendResponse(localStorage.saveCropPosition === 'true' ? JSON.parse(localStorage.cropPosition) : {});
+                break;
+            case 'get_crop_scroll_position':
+                let res = {};
+                if (localStorage.saveCropPosition === 'true') res = JSON.parse(localStorage.cropScrollPosition);
+                res.hideFixedElements = (localStorage.hideFixedElements === 'true');
+                sendResponse(res);
+                break;
+            case 'get_info_screen':
+                sendResponse({format: localStorage.format, quality: localStorage.imageQuality});
+                break;
+            case 'get_hotkeys':
+                sendResponse({hotkeys: localStorage.hotkeys});
+                break;
+            case 'get_info_record':
+                sendResponse({
+                    state: screenshot.videoRecorder.getState(),
+                    status: screenshot.videoRecorder.getStatus(),
+                    time: screenshot.videoRecorder.getTimeRecord()
+                });
+                break;
+            case 'get_capture_desktop':
+                screenshot.captureDesktop(function (canvas) {
+                    sendResponse({dataUrl: canvas.toDataURL('image/' + (localStorage.format === 'jpg' ? 'jpeg' : 'png'), localStorage.imageQuality / 100)});
+                });
+                return true;
+            // break;
+
+            case 'generate_fragment':
+                screenshot.cropFragment(request.position, request.window_size, request.z);
+                break;
+            case 'generate_selected_scroll':
+                scroll_crop = true;
+                screenshot.captureEntire();
+                break;
+            case 'generate_selected_scroll_save':
+                save_scroll = true;
+                scroll_crop = true;
+                screenshot.captureEntire();
+                break;
+
+            case 'save_crop_position':
+                localStorage.cropPosition = JSON.stringify(request.position);
+                break;
+            case 'save_crop_scroll_position':
+                localStorage.cropScrollPosition = JSON.stringify(request.value);
+                break;
+            case 'save_position_video_camera':
+                localStorage.videoCameraPosition = JSON.stringify(request.position);
+                break;
+
+            case 'open_page':
+                screenshot.openPage(request.url);
+                break;
+            case 'open_edit_page':
+                screenshot.createEditPage(request.param);
+                break;
+            case 'copy_to_clipboard':
+                screenshot.copyToClipboard(request.dataUrl);
+                break;
+            case 'copy_to_clipboard_scroll':
+                copy_to_clipboard = true;
+                scroll_crop = true;
+                screenshot.captureEntire();
+                break;
+            case 'download_screen':
+                screenshot.download(request.dataUrl || localStorage.filePatch);
+                break;
+            case 'download_screen_content':
+                screenshot.setScreenName(function () {
+                    screenshot.download(request.dataUrl || localStorage.filePatch);
+                });
+                break;
+
+            case 'web_camera_toggle_panel':
+                chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
+                    chrome.tabs.sendMessage(tabs[0].id, {operation: 'web_camera_toggle'});
+                });
+                break;
+
+            case 'content_stop_timer':
+                chrome.browserAction.setPopup({popup: 'popup.html'});
+                break;
+            case 'content_end_timer':
+                chrome.browserAction.setPopup({popup: 'popup.html'});
+                if (request.type === 'capture_delayed') {
+                    screenshot.captureVisible();
+                } else if (request.type !== undefined) {
+                    screenshot.videoRecorder.capture({
+                        type: request.type,
+                        not_timer: true,
+                        media_access: true
+                    });
                 }
                 break;
-            case 'pause' :
+            case 'update_context_menu':
+                screenshot.createMenu();
+                break;
+
+            case 'activate_record':
+                switch (request.key) {
+                    case 'start' :
+                        screenshot.videoRecorder.capture({type: request.value});
+                        break;
+                    case 'pause' :
+                        screenshot.videoRecorder.pauseRecord();
+                        break;
+                    case 'stop' :
+                        screenshot.videoRecorder.stopRecord();
+                        break;
+                }
+                break;
+
+            case 'activate_hotkey':
+                switch (request.value) {
+                    case 'visible' :
+                        screenshot.captureVisible();
+                        break;
+                    case 'fragment' :
+                        screenshot.captureFragment();
+                        break;
+                    case 'selected' :
+                        screenshot.captureSelected();
+                        break;
+                    case 'scroll' :
+                        screenshot.scrollSelected();
+                        break;
+                    case 'entire' :
+                        screenshot.captureEntire();
+                        break;
+                    case 'window' :
+                        screenshot.captureWindow();
+                        break;
+                    case 'delayed' :
+                        screenshot.captureDelayed();
+                        break;
+                    case 'blank' :
+                        screenshot.createBlank();
+                        break;
+                }
+                break;
+
+            case 'activate_capture':
+                switch (request.value) {
+                    case 'capture-visible' :
+                        screenshot.captureVisible();
+                        break;
+                    case 'capture-fragment' :
+                        screenshot.captureFragment();
+                        break;
+                    case 'capture-selected' :
+                        screenshot.captureSelected();
+                        break;
+                    case 'capture-scroll' :
+                        screenshot.scrollSelected();
+                        break;
+                    case 'capture-entire' :
+                        screenshot.captureEntire();
+                        break;
+                    case 'capture-window' :
+                        screenshot.captureWindow();
+                        break;
+                    case 'capture-delayed' :
+                        screenshot.captureDelayed();
+                        break;
+                    case 'capture-blank' :
+                        screenshot.createBlank();
+                        break;
+                }
+                break;
+
+            case 'send_to':
+                switch (request.path) {
+                    case 'nimbus' :
+                    case 'slack' :
+                    case 'google' :
+                    case 'print' :
+                        if (request.dataUrl) localStorage.filePatch = request.dataUrl;
+                        screenshot.createEditPage(request.path);
+                        break;
+
+                    case 'nimbus_scroll' :
+                        send_nimbus = true;
+                        scroll_crop = true;
+                        screenshot.captureEntire();
+                        break;
+                    case 'slack_scroll' :
+                        send_slack = true;
+                        scroll_crop = true;
+                        screenshot.captureEntire();
+                        break;
+                    case 'google_scroll' :
+                        send_google = true;
+                        scroll_crop = true;
+                        screenshot.captureEntire();
+                        break;
+                    case 'print_scroll' :
+                        send_print = true;
+                        scroll_crop = true;
+                        screenshot.captureEntire();
+                        break;
+                }
+                break;
+
+            case 'status_video_change':
+                switch (request.status) {
+                    case 'play' :
+                        if (screenshot.videoRecorder.getState() !== 'recording') screenshot.videoRecorder.pauseRecord();
+                        break;
+                    case 'pause' :
+                        if (screenshot.videoRecorder.getState() === 'recording') screenshot.videoRecorder.pauseRecord();
+                        break;
+                    case 'stop' :
+                        screenshot.videoRecorder.stopRecord();
+                        break;
+                }
+                break;
+
+            case 'check_tab_action':
+                let action = {
+                    chrome: true,
+                    fragment: false,
+                    crop: false,
+                    scroll_crop: false,
+                    url: false
+                };
+
+                switch (request.action) {
+                    case 'insert_page' :
+                        chrome.tabs.query({active: true, lastFocusedWindow: true}, function (tabs) {
+                            if (!/^chrome/.test(tabs[0].url)) {
+                                chrome.tabs.executeScript(tabs[0].id, {file: "js/consentNimbus.js"});
+                            } else {
+                                action.chrome = true;
+                                chrome.runtime.sendMessage({
+                                    'operation': 'check_tab_action',
+                                    'action': 'back_is_page',
+                                    'value': JSON.stringify(action)
+                                });
+                            }
+                        });
+                        break;
+                    // case 'back_is_page' :
+                    //     screenshot.tab_action = JSON.parse(request.value);
+                    //     break;
+                }
+                break;
+
+        }
+    }
+);
+
+if (window.core.is_chrome) {
+    chrome.commands.onCommand.addListener(function (command) {
+        switch (command) {
+            case 'start_tab_video':
+                screenshot.videoRecorder.capture({type: 'tab'});
+                break;
+            case 'start_desktop_video':
+                screenshot.videoRecorder.capture({type: 'desktop'});
+                break;
+            case 'stop_video':
+                screenshot.videoRecorder.stopRecord();
+                break;
+            case 'pause_video':
                 if (screenshot.videoRecorder.getState() === 'recording') {
                     screenshot.videoRecorder.pauseRecord();
                 }
                 break;
-            case 'stop' :
-                screenshot.videoRecorder.stopRecord();
-                break;
         }
-    }
-    if (request.operation == 'video_deawing_tools') {
-        localStorage.deawingTools = request.value;
-    }
-    if (request.operation === 'open_page') {
-        console.log(request.url);
-        screenshot.openPage(request.url);
-    }
+    });
+}
 
-});
-
-//these variables are responsible for the operation of each function in separate tabs
-var thisCrop, thisFragment, thisScrollCrop;
-//These variables are parameters which are responsible for a function to scroll
-var xs, ys, ws, hs, scrollToCrop = false, saveScroll = false, pathImg, nimbus_open = false, slack_open = false, google_open = false, print_open = false;
-
-chrome.extension.onRequest.addListener(function (request, sender, sendResponse) {
-
-    if (request.operation == 'cap') {
-        xs = request.xs;
-        ys = request.ys;
-        ws = request.ws;
-        hs = request.hs;
-    }
-
-    if (request.operation == 'cropScroll') {
-        scrollToCrop = true;
-        screenshot.captureEntire()
-    }
-
-    if (request.operation == 'send_to_nimbus_scroll') {
-        nimbus_open = true;
-        scrollToCrop = true;
-        screenshot.captureEntire()
-    }
-
-    if (request.operation == 'send_to_slack_scroll') {
-        slack_open = true;
-        scrollToCrop = true;
-        screenshot.captureEntire()
-    }
-
-    if (request.operation == 'send_to_google_scroll') {
-        google_open = true;
-        scrollToCrop = true;
-        screenshot.captureEntire()
-    }
-
-    if (request.operation == 'send_to_print_scroll') {
-        print_open = true;
-        scrollToCrop = true;
-        screenshot.captureEntire()
-    }
-
-    if (request.operation == 'saveScroll') {
-        saveScroll = true;
-        scrollToCrop = true;
-        screenshot.captureEntire();
-    }
-
-    if (request.operation == 'Fragment') {
-        thisFragment = request.parameter;
-    }
-
-    if (request.operation == 'Crop') {
-        thisCrop = request.parameter;
-    }
-
-    if (request.operation == 'Scroll') {
-        thisScrollCrop = request.parameter;
-    }
-    if (request.operation == 'hotkeys') {
-        sendResponse({hotkeys: localStorage.hotkeys});
-    } else if (request.operation == 'hotkey') {
-        console.log(request.name);
-        if (request.name == 'visible') {
-            screenshot.captureVisible();
-        }
-        if (request.name == 'fragment') {
-            screenshot.captureFragment();
-        }
-        if (request.name == 'selected') {
-            screenshot.captureSelected();
-        }
-        if (request.name == 'scroll') {
-            screenshot.scrollSelected();
-        }
-        if (request.name == 'entire') {
-            screenshot.captureEntire();
-        }
-        if (request.name == 'window') {
-            screenshot.captureWindow();
-        }
-        if (request.name == 'tab_video') {
-            screenshot.videoRecorder.capture({
-                type: 'tab',
-                countdown: localStorage.videoCountdown
-            });
-        }
-        if (request.name == 'desktop_video') {
-            screenshot.videoRecorder.capture({
-                type: 'desktop',
-                countdown: localStorage.videoCountdown
-            });
-        }
-        if (request.name == 'stop_video') {
-            screenshot.videoRecorder.stopRecord()
-        }
-
-    }
-});
-
-// alert('Command:');
-chrome.commands.onCommand.addListener(function (command) {
-    if (command === 'start_tab_video') {
-        screenshot.videoRecorder.capture({
-            type: 'tab',
-            countdown: localStorage.videoCountdown
-        });
-    }
-    if (command === 'start_desktop_video') {
-        screenshot.videoRecorder.capture({
-            type: 'desktop',
-            countdown: localStorage.videoCountdown
-        });
-    }
-    if (command === 'stop_video') {
-        screenshot.videoRecorder.stopRecord()
-    }
-    if (command === 'pause_video') {
-        if (screenshot.videoRecorder.getState() === 'recording') {
-            screenshot.videoRecorder.pauseRecord();
-        }
-    }
-});
 
 if (localStorage.hotkeys) {
-    var hotkeys = JSON.parse(localStorage.hotkeys);
+    let hotkeys = JSON.parse(localStorage.hotkeys);
     localStorage.hotkeys = JSON.stringify({
         tab_video: hotkeys.tab_video || 55,
         desktop_video: hotkeys.desktop_video || 56,
@@ -1422,25 +1147,55 @@ if (localStorage.hotkeys) {
     });
 } else {
     localStorage.hotkeys = JSON.stringify({
-        tab_video: '55',
-        desktop_video: '56',
-        stop_video: '57',
-        visible: '49',
-        fragment: '54',
-        selected: '50',
-        scroll: '51',
-        entire: '52',
-        window: '53'
+        tab_video: 55,
+        desktop_video: 56,
+        stop_video: 57,
+        visible: 49,
+        fragment: 54,
+        selected: 50,
+        scroll: 51,
+        entire: 52,
+        window: 53
     });
 }
 
-if (!localStorage.hotkeysSendNS) {
+if (localStorage.hotkeysSendNS) {
+    let hotkeysSendNS = JSON.parse(localStorage.hotkeysSendNS);
     localStorage.hotkeysSendNS = JSON.stringify({
-        key: '13',
+        key: hotkeysSendNS.key || 13,
+        title: hotkeysSendNS.title || 'Enter'
+    });
+} else {
+    localStorage.hotkeysSendNS = JSON.stringify({
+        key: 13,
         title: 'Enter'
     });
 }
 
+if (!localStorage.mainMenuItem) {
+    localStorage.mainMenuItem = JSON.stringify({
+        "entire": true,
+        "window": true,
+        "selected": true,
+        "fragment": true,
+        "visible": true,
+        "blank": true,
+        "delayed": true,
+        "scroll": true,
+        "video": true,
+        "android": true
+    });
+} else {
+    let mainMenuItem = JSON.parse(localStorage.mainMenuItem);
+
+    mainMenuItem.selected = mainMenuItem.area;
+    delete mainMenuItem.area;
+    localStorage.mainMenuItem = JSON.stringify(mainMenuItem);
+}
+
+localStorage.accountPopup = localStorage.accountPopup || 'true';
+localStorage.ratePopup = localStorage.ratePopup || JSON.stringify({show: true, date: Date.now()});
+localStorage.videoCamera = localStorage.videoCamera || 'false';
 localStorage.micSound = localStorage.micSound || 'true';
 localStorage.tabSound = localStorage.tabSound || 'false';
 localStorage.videoReEncoding = localStorage.videoReEncoding || 'true';
@@ -1449,22 +1204,26 @@ localStorage.cursorAnimate = localStorage.cursorAnimate || 'false';
 localStorage.deawingTools = localStorage.deawingTools || 'false';
 localStorage.recordType = localStorage.recordType || 'tab';
 localStorage.videoSize = localStorage.videoSize || 'auto';
-localStorage.videoBitrate = localStorage.videoBitrate || '4500000';
+localStorage.videoBitrate = localStorage.videoBitrate || '4000000';
 localStorage.audioBitrate = localStorage.audioBitrate || '96000';
 localStorage.videoFps = localStorage.videoFps || '24';
 localStorage.deleteDrawing = localStorage.deleteDrawing || '6';
-localStorage.selectMic = localStorage.selectMic || 'default';
-localStorage.videoCountdown = localStorage.videoCountdown || '3';
+localStorage.videoCountdown = localStorage.videoCountdown || '0';
+localStorage.pageinfo = localStorage.pageinfo || JSON.stringify({'url': '', 'title': '', 'time': getTimeStamp()});
 localStorage.format = localStorage.format || 'png';
 localStorage.imageQuality = localStorage.imageQuality || '92';
-localStorage.enableEdit = localStorage.enableEdit || 'edit';
+localStorage.depthScreenshot = localStorage.depthScreenshot || '1';
+localStorage.fillColor = localStorage.fillColor || 'rgba(0,0,0,0)';
 localStorage.quickCapture = localStorage.quickCapture || 'false';
+localStorage.quickCaptureType = localStorage.quickCaptureType || 'visible';
+localStorage.enableEdit = localStorage.enableEdit || 'edit';
 localStorage.enableSaveAs = localStorage.enableSaveAs || 'true';
 localStorage.saveCropPosition = localStorage.saveCropPosition || 'false';
 localStorage.showContentMenu = localStorage.showContentMenu || 'true';
+localStorage.autoShortUrl = localStorage.autoShortUrl || 'true';
 localStorage.keepOriginalResolution = localStorage.keepOriginalResolution || 'true';
 localStorage.hideFixedElements = localStorage.hideFixedElements || 'true';
-localStorage.shareOnGoogle = localStorage.shareOnGoogle || 'false';
+localStorage.shareOnGoogle = localStorage.shareOnGoogle || 'true';
 localStorage.cropPosition = localStorage.cropPosition || JSON.stringify({
     "x": 50,
     "y": 50,
@@ -1481,13 +1240,66 @@ localStorage.cropScrollPosition = localStorage.cropScrollPosition || JSON.string
     "w": 400,
     "h": 200
 });
-localStorage.fileNamePattern = localStorage.fileNamePattern || 'screenshot-{domain}-{date}-{time}';
+localStorage.fileNamePatternScreenshot = localStorage.fileNamePatternScreenshot || 'screenshot-{domain}-{date}-{time}';
+localStorage.fileNamePatternScreencast = localStorage.fileNamePatternScreencast || 'screencast-{domain}-{date}-{time}';
+localStorage.timeScrollEntirePage = localStorage.timeScrollEntirePage || 200;
+localStorage.strokeSize = localStorage.strokeSize || 5;
+localStorage.strokeColor = localStorage.strokeColor || '#f00';
+localStorage.shadow = localStorage.shadow || 'false';
+localStorage.shadowBlur = localStorage.shadowBlur || 10;
+localStorage.shadowColor = localStorage.shadowColor || 'rgb(0, 0, 0)';
+localStorage.fontFamily = localStorage.fontFamily || 'Arial';
+localStorage.fontSize = localStorage.fontSize || 35;
+localStorage.googleUploadFolder = localStorage.googleUploadFolder || '{"id": "root", "title": "Main folder"}';
+localStorage.disableHelper = localStorage.disableHelper || 'true';
+localStorage.nimbusShare = localStorage.nimbusShare || 'false';
+localStorage.showInfoPrint = localStorage.showInfoPrint || 'true';
+localStorage.enableNumbers = localStorage.enableNumbers || 'false';
+localStorage.videoEditorTools = localStorage.videoEditorTools || 'arrow';
+localStorage.videoCameraPosition = localStorage.videoCameraPosition || JSON.stringify({
+    "x": 10,
+    "y": 10
+});
+localStorage.enableWatermark = localStorage.enableWatermark || 'false';
+localStorage.fileWatermark = localStorage.fileWatermark || '';
+localStorage.typeWatermark = localStorage.typeWatermark || 'image';
+localStorage.positionWatermark = localStorage.positionWatermark || 'rb';
+localStorage.percentWatermark = localStorage.percentWatermark || 0.5;
+localStorage.alphaWatermark = localStorage.alphaWatermark || 1;
+localStorage.fontWatermark = localStorage.fontWatermark || 'Times New Roman';
+localStorage.sizeWatermark = localStorage.sizeWatermark || 24;
+localStorage.colorWatermark = localStorage.colorWatermark || 'rgb(0, 0, 0, 1)';
+localStorage.textWatermark = localStorage.textWatermark || 'Watermark';
+localStorage.showNewButton = localStorage.showNewButton || 'true';
 
-window.onload = function () {
-    screenshot.init();
-};
+// localStorage.selectedVideoCamera
+// localStorage.selectedMicrophone
+
+if (localStorage.globalId === undefined) {
+    localStorage.globalId = (function () {
+        function S4() {
+            return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+        }
+
+        return S4() + S4() + S4() + S4();
+    })();
+}
+
+if (window.core.is_chrome && localStorage.fingerprint === undefined) {
+    Fingerprint2.getV18({}, function (result, components) {
+
+        localStorage.fingerprint = result;
+    });
+}
+
+if (window.core.is_linux) {
+    localStorage.enableSaveAs = 'false';
+}
+
+chrome.runtime.setUninstallURL('https://nimbus.everhelper.me/screenshot-uninstall/');
 
 chrome.storage.sync.get('nimbus_screenshot_first_install', function (data) {
+    localStorage.appFirstInstall = data.nimbus_screenshot_first_install;
     if (!data.nimbus_screenshot_first_install) {
         chrome.storage.sync.set({'nimbus_screenshot_first_install': true}, function () {
             screenshot.openPage('http://nimbus-screenshot.everhelper.me/install.php');
@@ -1495,15 +1307,138 @@ chrome.storage.sync.get('nimbus_screenshot_first_install', function (data) {
     }
 });
 
-chrome.runtime.setUninstallURL('https://nimbus.everhelper.me/screenshot-uninstall/');
+// if (localStorage.appFirstInstall === undefined) {
+//     localStorage.appFirstInstall = 'true';
+//     screenshot.openPage('http://nimbus-screenshot.everhelper.me/install.php');
+// }
 
-var manifest = chrome.runtime.getManifest();
-if (localStorage.version != manifest.version) {
+let manifest = chrome.runtime.getManifest();
+
+if (localStorage.version && !localStorage.appVersion) {
+    localStorage.appVersion = localStorage.version;
+}
+
+if (localStorage.format === 'jpeg') localStorage.format = 'jpg';
+
+if (localStorage.appVersion === undefined) {
+    localStorage.appVersion = manifest.version;
+} else if (localStorage.appVersion !== manifest.version && localStorage.showNewButton === 'true') {
     iconService.setUpdate();
 
     chrome.browserAction.onClicked.addListener(function () {
-        localStorage.version = manifest.version;
+        localStorage.appVersion = manifest.version;
         iconService.setDefault();
-        chrome.tabs.create({url: 'http://nimbus-screenshot.everhelper.me/releasecapture' + (navigator.language == 'ru' ? 'ru' : '') + '.php', active: true});
+        chrome.tabs.create({
+            url: 'http://nimbus-screenshot.everhelper.me/releasecapture' + (navigator.language === 'ru' ? 'ru' : '') + (window.core.is_firefox ? '-ff' : '') + '.php',
+            active: true
+        });
     });
 }
+
+window.onload = function () {
+    screenshot.init();
+};
+
+chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+    if (changeInfo.status === "loading" && /nimbusweb\.me\/slack\/\?code/.test(tab.url)) {
+        let code = tab.url.match(/code=(.+)&/)[1];
+        let client_id = '17258488439.50405596566';
+        let client_secret = '55775ecb78fe5cfc10250bd0119e0fc5';
+        chrome.tabs.remove(tabId);
+
+        screenshot.slack.requestToApi('oauth.access', 'client_id=' + client_id + '&client_secret=' + client_secret + '&code=' + code, function (err, oauth) {
+            screenshot.slack.oauth = oauth;
+            localStorage.slackToken = screenshot.slack.oauth.access_token;
+            screenshot.slack.sendData();
+        })
+    }
+
+
+    if (/*changeInfo.status === "loading" && */ /everhelper\.me\/nimbus-download-image\.html\#access_token/.test(tab.url)) {
+        // https://everhelper.me/#access_token=duM7xgibBQ8AAAAAAAAuxY-iIWLrqYvpmUaJa_9lSWGf_IfqBoB0hSE_YwcHIr5a&token_type=bearer&uid=388836341&account_id=dbid%3AAAB1hyx_Sq8YFtoC4c_sl52H8jeu2jNQaLg
+
+        localStorage.access_token_dropbox = tab.url.match(/access_token=([^&]+)/)[1];
+        chrome.tabs.remove(tabId);
+        chrome.tabs.query({/*active: true, lastFocusedWindow: true*/}, function (tabs) {
+            for (let i = 0; i < tabs.length; i++) {
+                chrome.tabs.sendMessage(tabs[i].id, {action: 'access_dropbox'});
+            }
+        });
+    }
+
+    if (/*changeInfo.status === "complete" && */(/everhelper\.me\/auth-frame\/openidconnect/.test(tab.url) || /everhelper\.me\/auth\/openidconnect/.test(tab.url)) && /###EVERFAUTH:/.test(tab.title)) {
+        chrome.tabs.remove(tabId);
+        chrome.tabs.query({/*active: true, lastFocusedWindow: true*/}, function (tabs) {
+            for (let i = 0; i < tabs.length; i++) {
+                chrome.tabs.sendMessage(tabs[i].id, {action: 'access_nimbus'});
+            }
+        });
+    }
+
+    if (/*changeInfo.status === "complete" && *//accounts\.google\.com\/o\/oauth2\/approval/.test(tab.url) && /code=/.test(tab.title) && google_oauth.is_tab) {
+        let code = tab.title.match(/.+?code=([\w\/\-]+)/)[1];
+        let xhr = new XMLHttpRequest();
+        let body = 'code=' + code +
+            '&client_id=' + google_oauth.client_id +
+            '&client_secret=' + google_oauth.client_secret +
+            '&grant_type=authorization_code' +
+            '&redirect_uri=urn:ietf:wg:oauth:2.0:oob:auto';
+        xhr.open("POST", 'https://www.googleapis.com/oauth2/v4/token', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function () {
+            if (xhr.readyState !== 4 && xhr.status !== 200) return;
+            google_oauth.is_tab = false;
+            let response = JSON.parse(xhr.responseText);
+            console.log(response);
+            if (response.access_token !== undefined && response.refresh_token !== undefined) {
+                localStorage.access_token_google = response.access_token;
+                localStorage.refresh_token_google = response.refresh_token;
+                localStorage.expires_in_google = Date.now() + +response.expires_in * 1000;
+
+                chrome.tabs.remove(tabId);
+                chrome.tabs.query({/*active: true, lastFocusedWindow: true*/}, function (tabs) {
+                    for (let i = 0; i < tabs.length; i++) {
+                        chrome.tabs.sendMessage(tabs[i].id, {operation: 'access_google'});
+                    }
+                });
+            }
+        };
+        xhr.onerror = function (err) {
+            console.error(err);
+        };
+        xhr.send(body);
+    }
+    if (/*changeInfo.status === "complete" && *//accounts\.google\.com\/o\/oauth2\/approval/.test(tab.url) && /code=/.test(tab.title) && youtube_oauth.is_tab) {
+        let code = tab.title.match(/.+?code=([\w\/\-]+)/)[1];
+        let xhr = new XMLHttpRequest();
+        let body = 'code=' + code +
+            '&client_id=' + youtube_oauth.client_id +
+            '&client_secret=' + youtube_oauth.client_secret +
+            '&grant_type=authorization_code' +
+            '&redirect_uri=urn:ietf:wg:oauth:2.0:oob:auto';
+        xhr.open("POST", 'https://www.googleapis.com/oauth2/v4/token', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function () {
+            if (xhr.readyState !== 4 && xhr.status !== 200) return;
+            youtube_oauth.is_tab = false;
+            let response = JSON.parse(xhr.responseText);
+            console.log(response);
+            if (response.access_token !== undefined && response.refresh_token !== undefined) {
+                localStorage.access_token_youtube = response.access_token;
+                localStorage.refresh_token_youtube = response.refresh_token;
+                localStorage.expires_in_youtube = Date.now() + +response.expires_in * 1000;
+
+                chrome.tabs.remove(tabId);
+                chrome.tabs.query({/*active: true, lastFocusedWindow: true*/}, function (tabs) {
+                    for (let i = 0; i < tabs.length; i++) {
+                        chrome.tabs.sendMessage(tabs[i].id, {operation: 'access_youtube'});
+                    }
+                });
+            }
+        };
+        xhr.onerror = function (err) {
+            console.error(err);
+        };
+        xhr.send(body);
+    }
+});

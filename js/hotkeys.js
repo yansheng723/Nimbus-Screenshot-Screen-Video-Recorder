@@ -12,75 +12,28 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * */
 
-(function () {
-    if (!EXT_HOTKEY_JS_INSERTED) {
-        var EXT_HOTKEY_JS_INSERTED = true;
-        var hotkeys = {};
+if (!window.EXT_HOTKEY_JS_INSERTED) {
+    window.EXT_HOTKEY_JS_INSERTED = true;
 
-        chrome.extension.sendRequest({operation: 'hotkeys'}, function (response) {
-            if (response)
-                if (response.hotkeys) {
-                    hotkeys = JSON.parse(response.hotkeys);
-                }
-        });
+    chrome.runtime.sendMessage({operation: 'get_hotkeys'}, function (response) {
+        let hotkeys = JSON.parse(response.hotkeys);
 
-        var sendToChrome = function (type) {
-            chrome.extension.sendRequest({'operation': 'hotkey', 'name': type});
-        };
+        function sendToChrome(type) {
+            chrome.runtime.sendMessage({operation: 'activate_hotkey', value: type});
+        }
 
         window.addEventListener('keydown', function (e) {
-            var k = e.keyCode;
+            const k = e.keyCode;
             if (e.shiftKey && e.ctrlKey) {
-                if (k == hotkeys.entire) {
-                    sendToChrome('entire');
-                    e.preventDefault();
-                    return false;
-                }
-
-                if (k == hotkeys.fragment) {
-                    sendToChrome('fragment');
-                    e.preventDefault();
-                    return false;
-                }
-
-                if (k == hotkeys.selected) {
-                    sendToChrome('selected');
-                    e.preventDefault();
-                    return false;
-                }
-                if (k == hotkeys.scroll) {
-                    sendToChrome('scroll');
-                    e.preventDefault();
-                    return false;
-                }
-                if (k == hotkeys.visible) {
-                    sendToChrome('visible');
-                    e.preventDefault();
-                    return false;
-                }
-                if (k == hotkeys.window) {
-                    sendToChrome('window');
-                    e.preventDefault();
-                    return false;
-                }
-                // if (k == hotkeys.tab_video) {
-                //     sendToChrome('tab_video');
-                //     e.preventDefault();
-                //     return false;
-                // }
-                // if (k == hotkeys.desktop_video) {
-                //     sendToChrome('desktop_video');
-                //     e.preventDefault();
-                //     return false;
-                // }
-                // if (k == hotkeys.stop_video) {
-                //     sendToChrome('stop_video');
-                //     e.preventDefault();
-                //     return false;
-                // }
+                if (k === +hotkeys.entire) sendToChrome('entire');
+                if (k === +hotkeys.fragment) sendToChrome('fragment');
+                if (k === +hotkeys.selected) sendToChrome('selected');
+                if (k === +hotkeys.scroll) sendToChrome('scroll');
+                if (k === +hotkeys.visible) sendToChrome('visible');
+                if (k === +hotkeys.window) sendToChrome('window');
             }
-
-            return true;
         }, false);
-    }
-})();
+    });
+}
+
+// var event = new KeyboardEvent('keydown', {keyCode: "52", ctrlKey: true, shiftKey: true}); window.dispatchEvent(event);
